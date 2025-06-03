@@ -3,123 +3,95 @@
 ---
 
 ## Apa itu MoodSync?  
-MoodSync adalah aplikasi yang pakai kecerdasan buatan (AI) untuk bantu kamu paham gimana kondisi mental dan mood kamu sehari-hari. Jadi, kamu bisa lebih sadar dan bisa atur kebiasaan supaya hidup lebih sehat dan produktif.
+MoodSync adalah aplikasi berbasis AI yang membantu kamu memahami kondisi mental dan mood sehari-hari. Dengan insight dari AI, kamu bisa lebih sadar dan mengatur kebiasaan agar hidup lebih sehat dan produktif.
 
 ---
 
 ## Teknologi yang Kami Pakai  
-- **Frontend**: Next.js 14 (App Router)  
-- **Desain**: Tailwind CSS + Framer Motion  
-- **Database**: Supabase (PostgreSQL)  
-- **Login & Keamanan**: NextAuth.js  
-- **AI**: OpenAI GPT-4 + Gemini API  
-- **Grafik & Data**: Recharts + D3.js  
-- **Manajemen Data**: Zustand  
-- **Form**: React Hook Form + Zod  
-- **Hosting**: Vercel  
-- **Analitik**: Posthog  
-- **Notifikasi**: OneSignal  
+
+- **Frontend:** Next.js 14 (App Router)  
+- **Desain:** Tailwind CSS + Framer Motion  
+- **Backend:** NestJS + TypeORM  
+- **Database:** MySQL  
+- **Login & Keamanan:** NextAuth.js (Frontend), Passport.js & JWT (Backend)  
+- **AI:** OpenAI GPT-4 + Gemini API  
+- **Grafik & Visualisasi Data:** Recharts + D3.js  
+- **Manajemen State:** Zustand  
+- **Form Handling:** React Hook Form + Zod  
+- **Hosting:** Vercel (Frontend)  
+- **Analitik:** Posthog  
+- **Notifikasi:** OneSignal  
 
 ---
 
-## Fitur Keren yang Ada di MoodSync
+## Fitur Utama  
 
-### AI yang Bantu Kamu  
-- Mood kamu dianalisa otomatis, lalu dapat saran yang cocok buat kamu  
-- Bisa prediksi kapan hari-hari berat akan datang, supaya kamu siap  
-- Konten meditasi, artikel, dan tips yang pas buat kebutuhanmu  
-- Bisa deteksi emosi lewat voice note yang kamu rekam  
+### AI yang Membantu Kamu  
+- Analisis mood otomatis dengan saran personal  
+- Prediksi hari-hari berat agar kamu siap menghadapi  
+- Konten meditasi, artikel, dan tips sesuai kebutuhan  
+- Deteksi emosi dari voice note rekaman  
 
-### Laporan dan Grafik  
-- Visualisasi perubahan mood dalam berbagai rentang waktu  
-- Tahu hubungan antara aktivitas, cuaca, tidur, dan mood kamu  
-- Skor kesehatan mental yang bisa kamu pantau kapan saja  
-- Melihat perkembangan dan kebiasaan kamu dari waktu ke waktu  
+### Laporan & Grafik  
+- Visualisasi perubahan mood dari waktu ke waktu  
+- Insight hubungan mood dengan aktivitas, cuaca, dan tidur  
+- Skor kesehatan mental yang bisa dipantau kapan saja  
+- Pantau perkembangan dan kebiasaan kamu secara real-time  
 
-### Kelola Kebiasaan dan Target  
-- AI rekomendasikan kebiasaan baru sesuai tujuan dan karakter kamu  
-- Jadwal yang menyesuaikan sama mood dan energi kamu setiap hari  
-- Pecah target besar jadi tugas kecil yang mudah dikerjakan  
-- Bisa share progress ke teman supaya sama-sama semangat  
+### Kelola Kebiasaan & Target  
+- Rekomendasi kebiasaan baru sesuai tujuan dan karakter  
+- Jadwal dinamis yang menyesuaikan mood dan energi harian  
+- Memecah target besar menjadi tugas kecil yang mudah dikerjakan  
+- Share progress ke teman untuk saling mendukung  
 
 ---
 
-## Buat Siapa Aplikasi Ini?
+## Target Pengguna  
 
-### Untuk Pengguna Biasa (Gratis & Premium)  
-- Catat mood setiap hari dengan cepat dan mudah  
-- Dapat bantuan AI lewat chatbot buat tanya-tanya soal mental  
-- Fitur buat tracking mood, upload foto, voice note, dan prediksi mood  
-- Fitur meditasi, latihan pernapasan, jurnal rasa syukur, dan lainnya  
-- Bisa share mood ke teman, gabung komunitas, dan ikut sesi ahli  
+### Pengguna Biasa (Gratis & Premium)  
+- Catat mood dengan cepat dan mudah  
+- Chatbot AI untuk konsultasi mental  
+- Fitur upload foto, voice note, dan prediksi mood  
+- Meditasi, latihan pernapasan, jurnal syukur, dll  
+- Gabung komunitas dan sesi dengan ahli  
 
-### Untuk Therapist & Coach (Pro Plan)  
-- Pantau klien dengan mudah lewat dashboard  
-- Catat progres dan buat rencana terapi yang jelas  
-- Dapat notifikasi kalau ada tanda-tanda krisis  
-- Tools lengkap buat bantu klien lebih baik  
+### Therapist & Coach (Pro Plan)  
+- Dashboard untuk monitoring klien  
+- Catat progres dan rencana terapi  
+- Notifikasi tanda krisis  
+- Tools lengkap untuk membantu klien  
 
-### Untuk Perusahaan & Organisasi (Enterprise)  
-- Lihat tren mood tim secara anonim  
-- Jalankan program wellness di perusahaan  
-- Deteksi stres dini supaya mencegah burnout  
-- Laporkan hasil program ke manajemen dengan mudah  
+### Perusahaan & Organisasi (Enterprise)  
+- Pantau tren mood tim secara anonim  
+- Program wellness karyawan  
+- Deteksi stres dini dan pencegahan burnout  
+- Laporan hasil program ke manajemen  
 
 ---
 
 ## Privasi & Keamanan  
-- Semua data kamu dienkripsi dengan aman  
-- Sesuai standar HIPAA & GDPR untuk jaga privasi medis  
-- Kamu bisa hapus data kapan saja atau unduh untuk backup  
-- AI diawasi supaya tidak bias dan transparan dalam kerja  
+- Data dienkripsi dan disimpan dengan aman  
+- Memenuhi standar HIPAA & GDPR  
+- Pengguna bisa hapus atau unduh data kapan saja  
+- AI diawasi agar tidak bias dan transparan  
 
 ---
 
-## Desain & Pengalaman Pengguna  
-- Tampilan menyesuaikan mood dan waktu  
-- Ramah akses untuk semua orang (termasuk dengan kebutuhan khusus)  
-- Animasi kecil yang asik tanpa ganggu  
-- Bisa kontrol dengan suara supaya makin praktis  
-
----
-
-## Cara Kami Menghasilkan Uang  
+## Cara Menghasilkan Uang  
 - Paket gratis dengan fitur dasar dan iklan  
-- Paket premium dengan fitur lengkap dan tanpa iklan ($9.99/bulan)  
-- Paket pro khusus buat therapist dan coach ($29.99/bulan)  
-- Paket enterprise khusus untuk perusahaan (harga khusus)  
+- Paket premium tanpa iklan dan fitur lengkap ($9.99/bulan)  
+- Paket pro untuk therapist dan coach ($29.99/bulan)  
+- Paket enterprise untuk perusahaan (harga khusus)  
 
 ---
 
-## Kenapa MoodSync?  
-- Bukan cuma catat mood, tapi kasih saran yang bermanfaat pakai AI  
-- Fokus ke kesehatan mental sekaligus produktivitas dan gaya hidup  
-- Privasi kamu nomor satu, data kamu aman dan kamu yang pegang kendali  
-- Bisa dipakai bareng profesional kesehatan mental  
-- Paham dengan budaya dan kebutuhan unik tiap orang  
-- Semua fitur dibuat berdasar riset psikologi terpercaya  
+## Cara Menjalankan Project ini Secara Lokal
 
----
+### Prasyarat  
+- Node.js (versi terbaru direkomendasikan)  
+- MySQL server berjalan dan siap digunakan  
 
-## Siapa yang Pasti Suka MoodSync?  
-- Anak muda yang aktif dan suka teknologi  
-- Orang yang kerja dari rumah dan perlu jaga mental  
-- Pelajar dan mahasiswa yang butuh atur stres dan fokus  
-- Orang tua yang pengen tetap seimbang antara keluarga dan diri sendiri  
-- Profesional kesehatan dan HR perusahaan  
-
----
-
-## Rencana Pengembangan ke Depan  
-
-| Fase     | Waktu      | Fokus Utama                            |
-|----------|------------|--------------------------------------|
-| Launch   | Sekarang   | Mood tracking, habit management, AI dasar |
-| Q2 2025  | Kuartal 2  | App mobile, AI lebih canggih          |
-| Q4 2025  | Kuartal 4  | Fitur untuk perusahaan & wearable     |
-| 2026     | Tahun Depan| Pengalaman VR/AR & ekspansi global    |
-
----
-
-Makasih sudah mampir! Yuk mulai jaga mood dan produktivitasmu bareng **MoodSync**. Kalau mau bantu atau tanya-tanya, langsung aja buka issue atau pull request ya!
-
+### Clone Repository  
+```bash
+git clone https://github.com/username/moodsync.git
+cd moodsync

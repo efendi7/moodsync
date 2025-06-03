@@ -4,6 +4,9 @@ import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
 import * as bcrypt from 'bcrypt';
 
+// === Swagger Import ===
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -27,12 +30,22 @@ async function bootstrap() {
   // Global API Prefix
   app.setGlobalPrefix(process.env.API_PREFIX || 'api/v1');
 
-  // Tambahkan user dummy (dengan error handling)
+  // === Swagger Setup ===
+  const config = new DocumentBuilder()
+    .setTitle('MoodSync API')
+    .setDescription('Dokumentasi REST API untuk MoodSync')
+    .setVersion('1.0')
+    .addBearerAuth() // jika kamu pakai JWT
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document); // buka http://localhost:5000/docs
+
+  // Dummy user (optional)
   try {
     const userService = app.get(UsersService);
     const password = await bcrypt.hash('password', 10);
-    
-    // Check if user already exists to avoid duplicates
+
     const existingUser = await userService.findByEmail('test@example.com');
     if (!existingUser) {
       await userService.create({
@@ -51,6 +64,7 @@ async function bootstrap() {
   const port = process.env.PORT || 5000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
+  console.log(`📘 Swagger docs available at: http://localhost:${port}/docs`);
 }
 
 bootstrap().catch((error) => {
