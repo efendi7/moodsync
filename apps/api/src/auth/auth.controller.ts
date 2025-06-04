@@ -64,7 +64,9 @@ export class AuthController {
   }
 
   @Get('register')
-  @ApiOperation({ summary: 'Halaman register (dummy response untuk GET register)' })
+  @ApiOperation({
+    summary: 'Halaman register (dummy response untuk GET register)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Response default ketika mengakses GET /auth/register',

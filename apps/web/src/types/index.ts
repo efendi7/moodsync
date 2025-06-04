@@ -1,4 +1,6 @@
-// types/index.ts
+// src/types/index.ts (Updated)
+import { ReactNode } from 'react';
+
 export interface User {
   name: string;
   avatar: string;
@@ -7,8 +9,8 @@ export interface User {
 }
 
 export interface Insight {
-  type: "prediction" | "recommendation" | "achievement";
-  icon: React.ReactNode;
+  type: 'prediction' | 'recommendation' | 'achievement';
+  icon: ReactNode;
   title: string;
   description: string;
   action: string;
@@ -16,8 +18,9 @@ export interface Insight {
 
 export interface QuickAction {
   name: string;
-  icon: React.ReactNode;
+  icon: ReactNode; // Changed from LucideIcon to ReactNode
   color: string;
+  onClick?: () => void;
 }
 
 export interface RecentMood {
@@ -32,11 +35,4 @@ export interface Habit {
   completed: boolean;
   streak: number;
   target: string;
-}
-
-export interface NavItem {
-  name: string;
-  icon: React.ReactNode;
-  href: string;
-  active?: boolean;
 }

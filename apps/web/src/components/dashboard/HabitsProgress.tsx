@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
+import { Card, Badge, IconButton } from '../ui';
+import { Check, X } from 'lucide-react';
 import { Habit } from '../../types';
 
 interface HabitsProgressProps {
@@ -7,54 +8,59 @@ interface HabitsProgressProps {
   isDarkMode: boolean;
 }
 
-export const HabitsProgress: React.FC<HabitsProgressProps> = ({ habits, isDarkMode }) => {
+export const HabitsProgress: React.FC<HabitsProgressProps> = ({
+  habits,
+  isDarkMode,
+}) => {
   return (
-    <div
-      className={`${
-        isDarkMode ? "bg-gray-800/50" : "bg-white/70"
-      } backdrop-blur-sm rounded-2xl border ${
-        isDarkMode ? "border-gray-700" : "border-gray-200"
-      } p-6`}
-    >
-      <h2 className="text-xl font-bold mb-6">Today's Habits</h2>
-      <div className="space-y-4">
+    <Card isDarkMode={isDarkMode} className="p-6">
+      <h3 className={`text-lg font-semibold mb-4 ${
+        isDarkMode ? 'text-white' : 'text-gray-800'
+      }`}>
+        Today's Habits
+      </h3>
+      
+      <div className="space-y-3">
         {habits.map((habit, index) => (
-          <div key={index} className="flex items-center justify-between">
+          <div 
+            key={index} 
+            className={`flex items-center justify-between p-3 rounded-xl transition-colors ${
+              isDarkMode 
+                ? 'bg-gray-700/30 hover:bg-gray-600/40' 
+                : 'bg-gray-100/80 hover:bg-gray-200/60'
+            }`}
+          >
             <div className="flex items-center gap-3">
-              <button
-                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                  habit.completed
-                    ? "bg-green-500 border-green-500"
-                    : isDarkMode
-                    ? "border-gray-600"
-                    : "border-gray-300"
-                }`}
-              >
-                {habit.completed && <CheckCircle className="w-4 h-4 text-white" />}
-              </button>
+              <IconButton
+                icon={habit.completed ? Check : X}
+                variant={habit.completed ? 'gradient' : 'ghost'}
+                size="sm"
+                gradientColors="from-green-500 to-emerald-500"
+              />
+              
               <div>
-                <div
-                  className={`font-medium text-sm ${
-                    habit.completed ? "line-through opacity-75" : ""
-                  }`}
-                >
+                <p className={`font-medium ${
+                  isDarkMode ? 'text-white' : 'text-gray-800'
+                }`}>
                   {habit.name}
-                </div>
-                <div
-                  className={`text-xs ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
-                >
-                  {habit.streak} day streak • {habit.target}
-                </div>
+                </p>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Target: {habit.target}
+                </p>
               </div>
             </div>
+            
+            <Badge
+              variant={habit.completed ? 'success' : 'warning'}
+              size="sm"
+            >
+              {habit.streak} day streak
+            </Badge>
           </div>
         ))}
       </div>
-      <button className="w-full mt-4 py-2 text-sm text-purple-400 hover:text-purple-300 font-medium">
-        View All Habits →
-      </button>
-    </div>
+    </Card>
   );
 };
