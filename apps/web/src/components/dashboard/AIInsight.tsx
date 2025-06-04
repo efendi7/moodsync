@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, Button, Badge } from '../ui';
+import { iconMap } from '../../mock/useDashboardData';
 import { Insight } from '../../types';
 
 interface AIInsightsProps {
@@ -44,7 +45,16 @@ export const AIInsights: React.FC<AIInsightsProps> = ({
           <Card key={index} isDarkMode={isDarkMode} hover className="p-4">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 p-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20">
-                {insight.icon}
+                {(() => {
+                  if (typeof insight.icon === 'string') {
+                    const IconComponent = iconMap[insight.icon.toLowerCase()];
+                    return IconComponent ? (
+                      <IconComponent className="w-5 h-5 text-purple-600" />
+                    ) : null;
+                  }
+
+                  return null; // Jika bukan string, jangan render apapun
+                })()}
               </div>
 
               <div className="flex-1 min-w-0">

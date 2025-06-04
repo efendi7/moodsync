@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card } from '../ui';
 import { QuickAction } from '../../types';
+import { iconMap } from '../../mock/useDashboardData';  // import iconMap
+import type { LucideIcon } from 'lucide-react';
 
 interface QuickActionsProps {
   actions: QuickAction[];
@@ -20,15 +22,25 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       </h3>
       
       <div className="grid grid-cols-2 gap-3">
-        {actions.map((action, index) => (
-          <QuickActionButton
-            key={index}
-            name={action.name}
-            icon={action.icon}
-            color={action.color}
-            onClick={() => console.log(`${action.name} clicked`)}
-          />
-        ))}
+        {actions.map((action, index) => {
+          // Check if icon exists and is a string before using toLowerCase
+          const iconKey = action.icon && typeof action.icon === 'string' 
+            ? action.icon.toLowerCase() 
+            : '';
+          
+          // Get the icon component from iconMap
+          const IconComponent: LucideIcon | undefined = iconKey ? iconMap[iconKey] : undefined;
+          
+          return (
+            <QuickActionButton
+              key={index}
+              name={action.name}
+              icon={IconComponent ? <IconComponent className="w-6 h-6" /> : null}
+              color={action.color}
+              onClick={() => console.log(`${action.name} clicked`)}
+            />
+          );
+        })}
       </div>
     </Card>
   );
