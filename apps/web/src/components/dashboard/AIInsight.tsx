@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button, Badge } from '../ui';
-import { iconMap } from '../../mock/useDashboardData';
+import { iconMap } from '../../hooks/useDashboardData';
 import { Insight } from '../../types';
 
 interface AIInsightsProps {

@@ -13,9 +13,12 @@ export const useMoodSelection = ({
   setCurrentMood,
   onComplete,
 }: UseMoodSelectionProps) => {
-  const handleMoodSelect = useCallback((moodIndex: number) => {
-    setCurrentMood(moodIndex);
-  }, [setCurrentMood]);
+  const handleMoodSelect = useCallback(
+    (moodIndex: number | null) => {
+      setCurrentMood(moodIndex);
+    },
+    [setCurrentMood],
+  );
 
   const handleComplete = useCallback(() => {
     if (currentMood !== null && onComplete) {

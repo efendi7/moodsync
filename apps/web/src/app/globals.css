@@ -24,3 +24,34 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* In your global CSS file, e.g., globals.css */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Optional: counter-spin untuk menjaga ikon tetap tegak */
+@keyframes counterSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Terapkan animasi ke elemen kontainer orbit */
+.animate-spin-clockwise {
+  animation: spin 8s linear infinite; /* Durasi 8 detik, bisa disesuaikan */
+}
+
+/* Terapkan counter-spin ke setiap bubble */
+.animate-counter-spin {
+  animation: counterSpin 8s linear infinite; /* Durasi harus sama dengan spin */
+}

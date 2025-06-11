@@ -1,105 +1,82 @@
-import { 
-  Body, 
-  Controller, 
-  Delete, 
-  Get, 
-  HttpStatus, 
-  NotFoundException, 
-  Param, 
-  ParseIntPipe, 
-  Patch, 
-  Post, 
-  UseGuards 
+// src/users/users.controller.ts
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { User } from './entities/user.entity'; // import User dari entity
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // akan dibuat nanti
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@ApiTags('users')
 @Controller('users')
-@UseGuards(JwtAuthGuard) // Protect all routes with JWT
+@UseGuards(JwtAuthGuard) // Protect all user endpoints
+@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create a new user (Admin only)' })
+  @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
+  create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    return this.usersService.create(createUserDto);
+  }
+
   @Get()
-  async findAll(): Promise<Omit<User, 'password'>[]> {
-    const users = await this.usersService.findAll();
-    return users.map(({ password, ...user }) => user);
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, description: 'List of users', type: [UserResponseDto] })
+  findAll(): Promise<UserResponseDto[]> {
+    return this.usersService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Omit<User, 'password'>> {
-    const user = await this.usersService.findOne(id);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
-
-  @Post()
-  async create(@Body() createUserDto: {
-    name: string;
-    email: string;
-    password: string;
-  }): Promise<Omit<User, 'password'>> {
-    const existingUser = await this.usersService.findByEmail(createUserDto.email);
-    if (existingUser) {
-      throw new NotFoundException('Email already exists');
-    }
-
-    const newUser = await this.usersService.create(createUserDto);
-    const { password, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({ status: 200, description: 'User found', type: UserResponseDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<UserResponseDto> {
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  async update(
+  @ApiOperation({ summary: 'Update user' })
+  @ApiResponse({ status: 200, description: 'User updated successfully', type: UserResponseDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
+  update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: {
-      name?: string;
-      email?: string;
-      password?: string;
-    }
-  ): Promise<Omit<User, 'password'>> {
-    const existingUser = await this.usersService.findOne(id);
-    if (!existingUser) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-
-    if (updateUserDto.email) {
-      const userWithEmail = await this.usersService.findByEmail(updateUserDto.email);
-      if (userWithEmail && userWithEmail.id !== id) {
-        throw new NotFoundException('Email already taken by another user');
-      }
-    }
-
-    const updatedUser = await this.usersService.update(id, updateUserDto);
-    if (!updatedUser) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
+    return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string; statusCode: number }> {
-    const success = await this.usersService.remove(id);
-    if (!success) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    return {
-      message: `User with ID ${id} has been deleted successfully`,
-      statusCode: HttpStatus.OK,
-    };
+  @ApiOperation({ summary: 'Delete user' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+    return this.usersService.remove(id);
   }
 
-  @Get('email/:email')
-  async findByEmail(@Param('email') email: string): Promise<Omit<User, 'password'>> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new NotFoundException(`User with email ${email} not found`);
-    }
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+  @Patch(':id/change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 409, description: 'Current password is incorrect' })
+  changePassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    return this.usersService.changePassword(id, changePasswordDto);
   }
 }

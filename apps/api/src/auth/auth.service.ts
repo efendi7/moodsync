@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+// src/auth/auth.service.ts
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException, // Tambahkan ini untuk error validasi
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '@/users/users.service';
@@ -14,13 +20,16 @@ export class AuthService {
   // Validasi user saat login
   async validateUser(email: string, pass: string): Promise<Omit<any, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && user.password && await bcrypt.compare(pass, user.password)) {
-      // Kembalikan user tanpa password
-      const { password, ...result } = user;
-      return result;
+    if (!user || !user.password) { // Tambahkan cek !user atau !user.password
+        throw new UnauthorizedException('Email atau password salah');
     }
-    // Jika gagal validasi, lempar UnauthorizedException
-    throw new UnauthorizedException('Email atau password salah');
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+        throw new UnauthorizedException('Email atau password salah');
+    }
+    // Kembalikan user tanpa password
+    const { password, ...result } = user;
+    return result;
   }
 
   // Generate token JWT dan kembalikan data user yang diperlukan
@@ -36,17 +45,25 @@ export class AuthService {
     };
   }
 
-  // Registrasi user baru dengan validasi email unik dan hashing password
+  // Registrasi user baru
   async register(data: RegisterDto): Promise<any> {
+    // Validasi email unik sudah ada di sini, itu bagus!
     const existing = await this.usersService.findByEmail(data.email);
     if (existing) {
       throw new ConflictException('Email sudah terdaftar');
     }
 
+    // Tidak perlu validasi password/confirmPassword manual di sini
+    // karena sudah ditangani oleh DTO dan Validation Pipe.
+
     const hashedPassword = await this.hashPassword(data.password);
+
+    // Hapus confirmPassword dari objek data sebelum dikirim ke UserService
+    const { confirmPassword, ...userDataToCreate } = data;
+
     return this.usersService.create({
-      name: data.name || 'Guest',
-      email: data.email,
+      name: userDataToCreate.name || 'Guest', // Pastikan Anda tidak menyimpan 'Guest' jika nama diisi
+      email: userDataToCreate.email,
       password: hashedPassword,
     });
   }

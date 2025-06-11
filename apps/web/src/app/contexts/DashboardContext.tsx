@@ -1,6 +1,12 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useDashboardData } from '../../mock/useDashboardData';
-import type { User, Insight, QuickAction, RecentMood, Habit } from '../../mock/useDashboardData';
+import { useDashboardData } from '../../hooks/useDashboardData';
+import type {
+  User,
+  Insight,
+  QuickAction,
+  RecentMood,
+  Habit,
+} from '../../hooks/useDashboardData';
 
 interface DashboardContextType {
   // Data from useDashboardData
@@ -11,14 +17,18 @@ interface DashboardContextType {
   recentMoods: RecentMood[];
   habits: Habit[];
   isLoading: boolean;
-  
+
   // Additional context methods
   refreshData: () => void;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+const DashboardContext = createContext<DashboardContextType | undefined>(
+  undefined,
+);
 
-export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const DashboardProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   // Use the dashboard data hook
   const dashboardData = useDashboardData();
 
@@ -44,7 +54,9 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
 export const useDashboardContext = () => {
   const context = useContext(DashboardContext);
   if (context === undefined) {
-    throw new Error('useDashboardContext must be used within a DashboardProvider');
+    throw new Error(
+      'useDashboardContext must be used within a DashboardProvider',
+    );
   }
   return context;
 };
