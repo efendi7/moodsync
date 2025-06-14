@@ -41,12 +41,14 @@ const DashboardContent = () => {
 
   const [currentMood, setCurrentMood] = useState<number | null>(null);
 
+  // Force theme consistency - always use the current isDarkMode value
+  const currentTheme = isDarkMode;
+
   const themeClasses = useMemo(() => {
-    const effectiveTheme = isHydrated ? isDarkMode : false;
-    return effectiveTheme
+    return currentTheme
       ? 'min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white'
       : 'min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900';
-  }, [isDarkMode, isHydrated]);
+  }, [currentTheme]);
 
   const mainContentClasses = useMemo(
     () =>
@@ -62,16 +64,22 @@ const DashboardContent = () => {
     refreshData();
   }, [refreshData]);
 
-  if (!isHydrated || isLoading) {
-    return <DashboardLoader />;
+  // Only show loading for data, not hydration
+  if (isLoading) {
+    return (
+      <div className={currentTheme 
+        ? "min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center"
+        : "min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center"
+      }>
+        <LoadingSpinner />
+      </div>
+    );
   }
-
-  const effectiveTheme = isDarkMode;
 
   return (
     <div className={themeClasses}>
       <Sidebar
-        isDarkMode={effectiveTheme}
+        isDarkMode={currentTheme}
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={toggleSidebar}
       />
@@ -79,18 +87,18 @@ const DashboardContent = () => {
       <div className={mainContentClasses}>
         <Header
           user={user}
-          isDarkMode={effectiveTheme}
+          isDarkMode={currentTheme}
           toggleTheme={toggleTheme}
           onRefresh={handleRefresh}
         />
 
         <main className="container mx-auto px-6 py-8 max-w-7xl">
-          <WelcomeSection userName={user.name} isDarkMode={effectiveTheme} />
+          <WelcomeSection userName={user.name} isDarkMode={currentTheme} />
 
           <StatsCards
             user={user}
             todayProgress={todayProgress}
-            isDarkMode={effectiveTheme}
+            isDarkMode={currentTheme}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -98,19 +106,19 @@ const DashboardContent = () => {
               <DailyCheckIn
                 currentMood={currentMood}
                 setCurrentMood={handleMoodChange}
-                isDarkMode={effectiveTheme}
+                isDarkMode={currentTheme}
               />
 
-              <AIInsights insights={insights} isDarkMode={effectiveTheme} />
+              <AIInsights insights={insights} isDarkMode={currentTheme} />
             </section>
 
             <aside className="space-y-8">
               <QuickActions
                 actions={quickActions}
-                isDarkMode={effectiveTheme}
+                isDarkMode={currentTheme}
               />
-              <RecentMoods moods={recentMoods} isDarkMode={effectiveTheme} />
-              <HabitsProgress habits={habits} isDarkMode={effectiveTheme} />
+              <RecentMoods moods={recentMoods} isDarkMode={currentTheme} />
+              <HabitsProgress habits={habits} isDarkMode={currentTheme} />
             </aside>
           </div>
         </main>

@@ -2,12 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff, User, UserPlus, CheckCircle, XCircle } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode'; // Pastikan sudah diinstal: npm install jwt-decode
 
 interface RegisterData {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+interface DecodedGoogleToken {
+  email: string;
+  name: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  sub: string; // Google User ID
+  // Add other fields you expect from the JWT
 }
 
 const RegisterPage: React.FC = () => {
@@ -23,7 +35,10 @@ const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  // FIX: Initialize isVisible to true directly to avoid hydration mismatch
+  // Animasi "fade-in" akan tetap bekerja karena properti `transition-all`
+  // akan diterapkan pada render awal, dan elemen akan langsung muncul.
+  const [isVisible, setIsVisible] = useState(true);
 
   const [passwordMatch, setPasswordMatch] = useState(true);
   const [passwordStrength, setPasswordStrength] = useState({
@@ -34,6 +49,9 @@ const RegisterPage: React.FC = () => {
     hasSpecialChar: false,
   });
 
+  // REMOVED: useEffect yang sebelumnya mengatur isVisible dengan setTimeout.
+  // Ini adalah penyebab utama hydration mismatch.
+  /*
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -41,6 +59,7 @@ const RegisterPage: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, []);
+  */
 
   useEffect(() => {
     setPasswordMatch(formData.password === formData.confirmPassword);
@@ -84,7 +103,6 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // Ganti dengan URL backend Anda
       const response = await fetch('http://localhost:5000/api/v1/auth/register', {
         method: 'POST',
         headers: {
@@ -101,21 +119,17 @@ const RegisterPage: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle error response dari backend
         if (data.message) {
-          // Jika backend mengirim pesan error spesifik
           setMessage(Array.isArray(data.message) ? data.message.join(', ') : data.message);
         } else {
           setMessage('Terjadi kesalahan saat registrasi.');
         }
         setIsError(true);
       } else {
-        // Registrasi berhasil
         setMessage('Registrasi berhasil! Selamat datang di komunitas kami ✨');
         setIsError(false);
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        
-        
+
         setTimeout(() => {
           window.location.href = '/auth/login';
         }, 2000);
@@ -127,6 +141,54 @@ const RegisterPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (response: any) => {
+    setLoading(true);
+    setMessage('');
+    setIsError(false);
+    try {
+      const decoded: DecodedGoogleToken = jwtDecode(response.credential);
+      console.log('Google Login Success (decoded):', decoded);
+
+      const backendResponse = await fetch('http://localhost:5000/api/v1/auth/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: response.credential }),
+      });
+
+      const data = await backendResponse.json();
+
+      if (!backendResponse.ok) {
+        if (data.message) {
+          setMessage(Array.isArray(data.message) ? data.message.join(', ') : data.message);
+        } else {
+          setMessage('Terjadi kesalahan saat login dengan Google.');
+        }
+        setIsError(true);
+      } else {
+        setMessage('Login dengan Google berhasil! Selamat datang ✨');
+        setIsError(false);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error during Google login processing:', error);
+      setMessage('Terjadi kesalahan saat memproses login Google.');
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleFailure = () => {
+    console.error('Google Login Failed.');
+    setMessage('Login dengan Google gagal. Silakan coba lagi.');
+    setIsError(true);
+    setLoading(false);
   };
 
   const renderValidationIcon = (isValid: boolean) => {
@@ -183,7 +245,7 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Side Kanan - Formm Registrasi */}
+        {/* Side Kanan - Form Registrasi */}
         <div
           className={`flex-1 max-w-md
                       transition-all duration-700 ease-out transform delay-150
@@ -355,6 +417,24 @@ const RegisterPage: React.FC = () => {
                   </>
                 )}
               </button>
+            </div>
+
+            <div className="flex items-center justify-center my-4">
+              <div className="flex-grow border-t border-gray-300"></div>
+              <span className="px-3 text-gray-500 text-sm">ATAU</span>
+              <div className="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            {/* Social Login Buttons */}
+            <div className="space-y-3">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleFailure}
+                text="continue_with"
+                shape="rectangular"
+                theme="outline"
+                width="100%"
+              />
             </div>
 
             {/* Link ke Login */}

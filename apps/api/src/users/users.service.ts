@@ -1,4 +1,3 @@
-// src/users/users.service.ts
 import {
   Injectable,
   ConflictException,
@@ -22,7 +21,7 @@ export class UsersService {
 
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.userRepository.find({
-      select: ['id', 'name', 'email', 'createdAt', 'updatedAt'],
+      select: ['id', 'name', 'email', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
     });
 
     return users.map((user) => new UserResponseDto(user));
@@ -31,7 +30,7 @@ export class UsersService {
   async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'email', 'createdAt', 'updatedAt'],
+      select: ['id', 'name', 'email', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
     });
 
     if (!user) {
@@ -39,6 +38,13 @@ export class UsersService {
     }
 
     return new UserResponseDto(user);
+  }
+
+  // ADD: Missing findById method that AuthService needs
+  async findById(id: number): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { id },
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -111,6 +117,11 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
+    // Check if user has a password (not a social login user)
+    if (!user.password) {
+      throw new ConflictException('User tidak memiliki password lokal. Gunakan Google login.');
+    }
+
     // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(
       changePasswordDto.currentPassword,
@@ -136,7 +147,7 @@ export class UsersService {
   async findByEmailWithPassword(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'name', 'email', 'password', 'createdAt', 'updatedAt'],
+      select: ['id', 'name', 'email', 'password', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
     });
   }
 }

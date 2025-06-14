@@ -36,3 +36,10 @@ export interface Habit {
   streak: number;
   target: string;
 }
+
+export interface NavItem {
+  name: string; // tambahkan ini
+  href: string;
+  icon?: ReactNode;
+  active?: boolean; // tambahkan ini jika dipakai
+}

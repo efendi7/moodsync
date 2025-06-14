@@ -4,10 +4,13 @@ import {
   Post,
   Get,
   UnauthorizedException,
+  HttpCode, // Tambahkan ini
+  HttpStatus, // Tambahkan ini
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { GoogleLoginDto } from './dto/google-login.dto'; // Import DTO baru untuk Google Login
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('auth') // grouping di Swagger UI
@@ -16,11 +19,11 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK) // Secara default POST return 201, kita ingin 200 OK untuk login
   @ApiOperation({ summary: 'Login user dengan email dan password' })
   @ApiResponse({
     status: 200,
     description: 'Login berhasil dan mengembalikan token JWT',
-    // schema: { example: { access_token: 'token_string' } }  // opsional contoh response
   })
   @ApiResponse({ status: 401, description: 'Email atau password salah' })
   async login(@Body() body: LoginDto) {
@@ -38,11 +41,32 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'User berhasil dibuat',
-    // schema: { example: { id: 1, email: 'user@mail.com', name: 'User' } }
   })
   async register(@Body() body: RegisterDto) {
     return this.authService.register(body);
   }
+
+  // --- NEW: Endpoint untuk Login Google ---
+  @Post('google-login')
+  @HttpCode(HttpStatus.OK) // HTTP Status 200 OK
+  @ApiOperation({ summary: 'Login atau registrasi user via Google' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login/Registrasi Google berhasil dan mengembalikan token JWT',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Verifikasi token Google gagal atau tidak sah',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Permintaan tidak valid (misalnya token tidak ada)',
+  })
+  async googleLogin(@Body() body: GoogleLoginDto) {
+    return this.authService.googleLogin(body.token);
+  }
+  // --- END NEW ---
+
 
   @Get('login')
   @ApiOperation({ summary: 'Halaman login (dummy response untuk GET login)' })
