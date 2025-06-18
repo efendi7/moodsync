@@ -1,25 +1,27 @@
+// src/auth/auth.controller.ts
 import {
   Body,
   Controller,
   Post,
   Get,
   UnauthorizedException,
-  HttpCode, // Tambahkan ini
-  HttpStatus, // Tambahkan ini
+  HttpCode,
+  HttpStatus,
+  Request, // Import Request for accessing headers
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { GoogleLoginDto } from './dto/google-login.dto'; // Import DTO baru untuk Google Login
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'; // Import ApiBearerAuth
 
-@ApiTags('auth') // grouping di Swagger UI
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  @HttpCode(HttpStatus.OK) // Secara default POST return 201, kita ingin 200 OK untuk login
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user dengan email dan password' })
   @ApiResponse({
     status: 200,
@@ -46,9 +48,8 @@ export class AuthController {
     return this.authService.register(body);
   }
 
-  // --- NEW: Endpoint untuk Login Google ---
   @Post('google-login')
-  @HttpCode(HttpStatus.OK) // HTTP Status 200 OK
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login atau registrasi user via Google' })
   @ApiResponse({
     status: 200,
@@ -65,8 +66,23 @@ export class AuthController {
   async googleLogin(@Body() body: GoogleLoginDto) {
     return this.authService.googleLogin(body.token);
   }
-  // --- END NEW ---
 
+  // --- NEW: Endpoint untuk Logout ---
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth() // Indicates that this endpoint requires a bearer token (JWT)
+  @ApiOperation({ summary: 'Logout user (invalidasi token)' })
+  @ApiResponse({ status: 200, description: 'Berhasil logout, token telah diblacklist.' })
+  @ApiResponse({ status: 401, description: 'Token tidak valid atau tidak ada.' })
+  async logout(@Request() req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Token tidak ditemukan atau format tidak valid.');
+    }
+    const token = authHeader.split(' ')[1];
+    return this.authService.logout(token);
+  }
+  // --- END NEW ---
 
   @Get('login')
   @ApiOperation({ summary: 'Halaman login (dummy response untuk GET login)' })
@@ -83,7 +99,7 @@ export class AuthController {
   getLogin() {
     return {
       message:
-        'Halaman login form sudah ada, silahkan cek di https://localhost:3000/auth/login',
+        'Halaman login form sudah ada, silahkan cek di https://3000/auth/login',
     };
   }
 

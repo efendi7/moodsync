@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, User, UserPlus, CheckCircle, XCircle } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  UserPlus,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode'; // Pastikan sudah diinstal: npm install jwt-decode
+import { jwtDecode } from 'jwt-decode';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid';
 
 interface RegisterData {
   name: string;
@@ -82,7 +92,12 @@ const RegisterPage: React.FC = () => {
     setMessage('');
     setIsError(false);
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
       setMessage('Harap lengkapi semua bidang.');
       setIsError(true);
       return;
@@ -103,24 +118,31 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        'http://localhost:5000/api/v1/auth/register',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+          }),
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-        }),
-      });
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
         if (data.message) {
-          setMessage(Array.isArray(data.message) ? data.message.join(', ') : data.message);
+          setMessage(
+            Array.isArray(data.message)
+              ? data.message.join(', ')
+              : data.message,
+          );
         } else {
           setMessage('Terjadi kesalahan saat registrasi.');
         }
@@ -151,19 +173,26 @@ const RegisterPage: React.FC = () => {
       const decoded: DecodedGoogleToken = jwtDecode(response.credential);
       console.log('Google Login Success (decoded):', decoded);
 
-      const backendResponse = await fetch('http://localhost:5000/api/v1/auth/google-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const backendResponse = await fetch(
+        'http://localhost:5000/api/v1/auth/google-login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: response.credential }),
         },
-        body: JSON.stringify({ token: response.credential }),
-      });
+      );
 
       const data = await backendResponse.json();
 
       if (!backendResponse.ok) {
         if (data.message) {
-          setMessage(Array.isArray(data.message) ? data.message.join(', ') : data.message);
+          setMessage(
+            Array.isArray(data.message)
+              ? data.message.join(', ')
+              : data.message,
+          );
         } else {
           setMessage('Terjadi kesalahan saat login dengan Google.');
         }
@@ -191,13 +220,21 @@ const RegisterPage: React.FC = () => {
     setLoading(false);
   };
 
-  const renderValidationIcon = (isValid: boolean) => {
-    return isValid ? (
-      <CheckCircle className="w-3 h-3 text-green-500" />
-    ) : (
-      <XCircle className="w-3 h-3 text-red-500" />
-    );
-  };
+ function renderValidationItem(condition: boolean, description: string) {
+  return (
+    <div className="flex items-center gap-3 w-full">
+      <div className="flex-shrink-0">
+        {condition ? (
+          <CheckCircleIcon className="w-5 h-5 text-emerald-400" />
+        ) : (
+          <XCircleIcon className="w-5 h-5 text-red-400" />
+        )}
+      </div>
+      <span className="text-xs text-gray-700">{description}</span>
+    </div>
+  );
+}
+
 
   return (
     <div
@@ -207,6 +244,7 @@ const RegisterPage: React.FC = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
       }}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 opacity-85"></div>
@@ -259,7 +297,9 @@ const RegisterPage: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900 mb-1">
                 Mulai Perjalanan
               </h1>
-              <p className="text-gray-600 text-sm">Daftarkan diri Anda sekarang</p>
+              <p className="text-gray-600 text-sm">
+                Daftarkan diri Anda sekarang
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -330,22 +370,33 @@ const RegisterPage: React.FC = () => {
                   </button>
                 </div>
                 {/* Kompak password strength */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-gray-500 mt-1.5">
-                  <div className="flex items-center gap-1">
-                    {renderValidationIcon(passwordStrength.minLength)} Min 8 karakter
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {renderValidationIcon(passwordStrength.hasUpperCase)} Huruf kapital
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {renderValidationIcon(passwordStrength.hasLowerCase)} Huruf kecil
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {renderValidationIcon(passwordStrength.hasDigit)} Angka
-                  </div>
-                  <div className="flex items-center gap-1 col-span-2">
-                    {renderValidationIcon(passwordStrength.hasSpecialChar)} Karakter spesial
-                  </div>
+                <div className="mt-3 flex flex-col items-start space-y-3">
+                  {' '}
+                  {/* Added space-y for better spacing */}
+                  {renderValidationItem(
+                    passwordStrength.minLength,
+                    'Password harus memiliki setidaknya 8 karakter.', // Add this description
+                  )}
+                  {renderValidationItem(
+                    passwordStrength.hasUpperCase,
+
+                    'Sertakan setidaknya satu huruf kapital (A-Z).', // Add this description
+                  )}
+                  {renderValidationItem(
+                    passwordStrength.hasLowerCase,
+
+                    'Sertakan setidaknya satu huruf kecil (a-z).', // Add this description
+                  )}
+                  {renderValidationItem(
+                    passwordStrength.hasDigit,
+
+                    'Sertakan setidaknya satu angka (0-9).', // Add this description
+                  )}
+                  {renderValidationItem(
+                    passwordStrength.hasSpecialChar,
+
+                    'Sertakan setidaknya satu simbol (!@#$%^&*).', // Add this description
+                  )}
                 </div>
               </div>
 
@@ -404,7 +455,11 @@ const RegisterPage: React.FC = () => {
               {/* Tombol Submit */}
               <button
                 type="button"
-                disabled={loading || !passwordMatch || !Object.values(passwordStrength).every(Boolean)}
+                disabled={
+                  loading ||
+                  !passwordMatch ||
+                  !Object.values(passwordStrength).every(Boolean)
+                }
                 onClick={handleSubmit}
                 className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-400 disabled:to-indigo-400 text-white font-medium py-3 px-6 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >

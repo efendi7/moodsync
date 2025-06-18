@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import Image from 'next/image'; // Make sure Image is imported
 import {
   ChevronDown,
   Play,
@@ -19,10 +20,67 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+// Custom hook for intersection observation with proper types
+const useIntersectionObserver = (options: IntersectionObserverInit) => {
+  const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
+  const [node, setNode] = useState<Element | null>(null);
+
+  // Use a mutable ref object to store the IntersectionObserver instance
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    if (observer.current) {
+      observer.current.disconnect();
+    }
+
+    if (node) {
+      observer.current = new IntersectionObserver(([ent]) => setEntry(ent), options);
+      observer.current.observe(node);
+    }
+
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+    };
+  }, [node, options]);
+
+  return [setNode, entry] as const;
+};
+
 const MoodSyncLandingPage = () => {
-  const [activeUseCase, setActiveUseCase] = useState('Personal Wellness');
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [activeUseCase, setActiveUseCase] = useState<string>('Personal Wellness');
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true); // Initial state set to dark mode
+
+  // Refs for sections to animate
+  const heroRef = useRef<HTMLElement>(null);
+  const dashboardRef = useRef<HTMLElement>(null);
+  const useCasesRef = useRef<HTMLElement>(null);
+  const featuresRef = useRef<HTMLElement>(null);
+  const howItWorksRef = useRef<HTMLElement>(null);
+  const pricingRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+
+  // Intersection Observer states
+  const [setHeroNode, heroEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setDashboardNode, dashboardEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setUseCasesNode, useCasesEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setFeaturesNode, featuresEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setHowItWorksNode, howItWorksEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setPricingNode, pricingEntry] = useIntersectionObserver({ threshold: 0.1 });
+  const [setCtaNode, ctaEntry] = useIntersectionObserver({ threshold: 0.1 });
+
+  useEffect(() => {
+    if (heroRef.current) setHeroNode(heroRef.current);
+    if (dashboardRef.current) setDashboardNode(dashboardRef.current);
+    if (useCasesRef.current) setUseCasesNode(useCasesRef.current);
+    if (featuresRef.current) setFeaturesNode(featuresRef.current);
+    if (howItWorksRef.current) setHowItWorksNode(howItWorksRef.current);
+    if (pricingRef.current) setPricingNode(pricingRef.current);
+    if (ctaRef.current) setCtaNode(ctaRef.current);
+  }, [setHeroNode, setDashboardNode, setUseCasesNode, setFeaturesNode, setHowItWorksNode, setPricingNode, setCtaNode]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +90,7 @@ const MoodSyncLandingPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const useCases = [
+  const useCases: string[] = [
     'Personal Wellness',
     'Remote Work',
     'Student Life',
@@ -40,7 +98,13 @@ const MoodSyncLandingPage = () => {
     'Therapy Support',
   ];
 
-  const features = [
+  interface Feature {
+    icon: ReactNode;
+    title: string;
+    description: string;
+  }
+
+  const features: Feature[] = [
     {
       icon: <Brain className="w-6 h-6" />,
       title: 'AI-Powered Insights',
@@ -49,8 +113,7 @@ const MoodSyncLandingPage = () => {
     {
       icon: <BarChart3 className="w-6 h-6" />,
       title: 'Advanced Analytics',
-      description:
-        'Discover patterns and correlations in your wellness journey',
+      description: 'Discover patterns and correlations in your wellness journey',
     },
     {
       icon: <Heart className="w-6 h-6" />,
@@ -64,7 +127,15 @@ const MoodSyncLandingPage = () => {
     },
   ];
 
-  const moodData = [
+  interface MoodData {
+    date: string;
+    mood: string;
+    score: number;
+    activity: string;
+    energy: string;
+  }
+
+  const moodData: MoodData[] = [
     {
       date: 'Mon',
       mood: '😊',
@@ -102,7 +173,13 @@ const MoodSyncLandingPage = () => {
     },
   ];
 
-  const plans = [
+  interface Plan {
+    name: string;
+    price: string;
+    features: string[];
+  }
+
+  const plans: Plan[] = [
     {
       name: 'Free',
       price: '$0',
@@ -141,9 +218,18 @@ const MoodSyncLandingPage = () => {
     setIsDarkMode(!isDarkMode);
   };
 
-  const themeClasses = isDarkMode
+  const themeClasses: string = isDarkMode
     ? 'min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white'
     : 'min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900';
+
+  const getAnimationClasses = (entry: IntersectionObserverEntry | null) => {
+    return `transition-all duration-700 ease-out ${entry?.isIntersecting ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`;
+  };
+
+  // Determine which image to show based on dark mode state
+  const dashboardImageSrc = isDarkMode ? '/img/dark-dashboard.png' : '/img/light-dashboard.png';
+  const dashboardImageAlt = isDarkMode ? 'MoodSync Dark Mode Dashboard Preview' : 'MoodSync Light Mode Dashboard Preview';
+
 
   return (
     <div className={themeClasses}>
@@ -235,7 +321,7 @@ const MoodSyncLandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
+      <section ref={heroRef} className={`pt-32 pb-20 px-6 ${getAnimationClasses(heroEntry)}`}>
         <div className="container mx-auto text-center max-w-4xl">
           <h1
             className={`text-5xl md:text-7xl font-bold mb-6 ${
@@ -274,139 +360,23 @@ const MoodSyncLandingPage = () => {
         </div>
       </section>
 
-      {/* Dashboard Preview */}
-      <section className="px-6 pb-20">
+      {/* Dashboard Preview (Image - Dark/Light Mode) */}
+      <section ref={dashboardRef} className={`px-6 pb-20 ${getAnimationClasses(dashboardEntry)}`}>
         <div className="container mx-auto max-w-6xl">
-          <div
-            className={`${
-              isDarkMode ? 'bg-gray-800/50' : 'bg-white/70'
-            } backdrop-blur-sm rounded-2xl border ${
-              isDarkMode ? 'border-gray-700' : 'border-gray-200'
-            } overflow-hidden shadow-2xl`}
-          >
-            <div
-              className={`${
-                isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'
-              } px-6 py-4 border-b ${
-                isDarkMode ? 'border-gray-700' : 'border-gray-200'
-              } flex items-center gap-4`}
-            >
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              </div>
-              <div
-                className={`text-sm ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}
-              >
-                MoodSync Dashboard
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead
-                  className={isDarkMode ? 'bg-gray-800/30' : 'bg-gray-100/50'}
-                >
-                  <tr
-                    className={`border-b ${
-                      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                    }`}
-                  >
-                    <th
-                      className={`text-left p-4 font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}
-                    >
-                      Date
-                    </th>
-                    <th
-                      className={`text-left p-4 font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}
-                    >
-                      Mood
-                    </th>
-                    <th
-                      className={`text-left p-4 font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}
-                    >
-                      Score
-                    </th>
-                    <th
-                      className={`text-left p-4 font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}
-                    >
-                      Activity
-                    </th>
-                    <th
-                      className={`text-left p-4 font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}
-                    >
-                      Energy
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {moodData.map((row, index) => (
-                    <tr
-                      key={index}
-                      className={`border-b ${
-                        isDarkMode
-                          ? 'border-gray-800 hover:bg-gray-800/30'
-                          : 'border-gray-100 hover:bg-gray-50'
-                      } transition-colors`}
-                    >
-                      <td className="p-4 font-medium">{row.date}</td>
-                      <td className="p-4 text-2xl">{row.mood}</td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            row.score >= 8
-                              ? 'bg-green-500/20 text-green-400'
-                              : row.score >= 6
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-red-500/20 text-red-400'
-                          }`}
-                        >
-                          {row.score}/10
-                        </span>
-                      </td>
-                      <td
-                        className={`p-4 ${
-                          isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                        }`}
-                      >
-                        {row.activity}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            row.energy === 'High'
-                              ? 'bg-purple-500/20 text-purple-300'
-                              : row.energy === 'Medium'
-                                ? 'bg-blue-500/20 text-blue-300'
-                                : 'bg-gray-500/20 text-gray-400'
-                          }`}
-                        >
-                          {row.energy}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Image
+            src={dashboardImageSrc} // Dynamic source based on dark mode
+            alt={dashboardImageAlt} // Dynamic alt text
+            width={1200} // Adjust this to the actual width of your dashboard images
+            height={750} // Adjust this to the actual height of your dashboard images (maintain aspect ratio)
+            layout="responsive"
+            priority // Consider adding priority if this is above the fold
+            className="rounded-2xl shadow-2xl transition-opacity duration-300 ease-in-out" // Added transition for smooth swap
+          />
         </div>
       </section>
 
       {/* Use Cases Section */}
-      <section className="px-6 py-20">
+      <section ref={useCasesRef} className={`px-6 py-20 ${getAnimationClasses(useCasesEntry)}`}>
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
             Perfect for Every Wellness Journey
@@ -423,8 +393,8 @@ const MoodSyncLandingPage = () => {
                           ? 'border-purple-500 bg-purple-500/10'
                           : 'border-purple-400 bg-purple-50'
                         : isDarkMode
-                          ? 'border-gray-700 hover:border-gray-600'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-gray-700 hover:border-gray-600'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <span className="font-medium">{useCase}</span>
@@ -471,7 +441,7 @@ const MoodSyncLandingPage = () => {
               } p-6`}
             >
               <div className="space-y-4">
-                {moodData.slice(0, 3).map((row, index) => (
+                {moodData.slice(0, 5).map((row, index) => (
                   <div
                     key={index}
                     className={`flex items-center justify-between p-3 ${
@@ -510,7 +480,7 @@ const MoodSyncLandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="px-6 py-20">
+      <section id="features" ref={featuresRef} className={`px-6 py-20 ${getAnimationClasses(featuresEntry)}`}>
         <div className="container mx-auto max-w-6xl text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Your Mental Health
@@ -536,7 +506,7 @@ const MoodSyncLandingPage = () => {
                     isDarkMode
                       ? 'border-gray-700 hover:border-gray-600'
                       : 'border-gray-200 hover:border-gray-300'
-                  } p-8 h-full transition-all duration-300`}
+                  } p-8 h-full transition-all duration-300 hover:shadow-lg`}
                 >
                   <div
                     className={`bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 w-fit mx-auto mb-6 group-hover:scale-110 transition-transform`}
@@ -557,7 +527,7 @@ const MoodSyncLandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="px-6 py-20">
+      <section ref={howItWorksRef} className={`px-6 py-20 ${getAnimationClasses(howItWorksEntry)}`}>
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-16">
             How MoodSync Works
@@ -584,7 +554,7 @@ const MoodSyncLandingPage = () => {
                 icon: <Zap className="w-8 h-8" />,
               },
             ].map((item, index) => (
-              <div key={index} className="relative">
+              <div key={index} className="relative group">
                 <div
                   className={`${
                     isDarkMode
@@ -592,9 +562,9 @@ const MoodSyncLandingPage = () => {
                       : 'bg-gradient-to-br from-white to-gray-50'
                   } rounded-2xl border ${
                     isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                  } p-8 h-full`}
+                  } p-8 h-full transition-all duration-300 group-hover:shadow-lg group-hover:scale-[1.02]`}
                 >
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-3 w-fit mx-auto mb-4">
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-3 w-fit mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <div className="text-white">{item.icon}</div>
                   </div>
                   <div
@@ -623,7 +593,7 @@ const MoodSyncLandingPage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="px-6 py-20">
+      <section id="pricing" ref={pricingRef} className={`px-6 py-20 ${getAnimationClasses(pricingEntry)}`}>
         <div className="container mx-auto max-w-6xl text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Choose Your Wellness Plan
@@ -646,9 +616,9 @@ const MoodSyncLandingPage = () => {
                   index === 1
                     ? 'border-purple-500 relative'
                     : isDarkMode
-                      ? 'border-gray-700'
-                      : 'border-gray-200'
-                } p-8 ${index === 1 ? 'scale-105' : ''}`}
+                    ? 'border-gray-700'
+                    : 'border-gray-200'
+                } p-8 transition-all duration-300 ${index === 1 ? 'scale-105 shadow-xl' : 'hover:scale-[1.02] hover:shadow-lg'}`}
               >
                 {index === 1 && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium">
@@ -685,8 +655,8 @@ const MoodSyncLandingPage = () => {
                     index === 1
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
                       : isDarkMode
-                        ? 'border border-gray-600 hover:border-gray-400'
-                        : 'border border-gray-300 hover:border-gray-500'
+                      ? 'border border-gray-600 hover:border-gray-400'
+                      : 'border border-gray-300 hover:border-gray-500'
                   }`}
                 >
                   {index === 0 ? 'Start Free' : 'Start Trial'}
@@ -698,7 +668,7 @@ const MoodSyncLandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="px-6 py-20">
+      <section ref={ctaRef} className={`px-6 py-20 ${getAnimationClasses(ctaEntry)}`}>
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Ready to Transform

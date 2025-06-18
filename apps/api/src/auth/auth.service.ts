@@ -13,17 +13,38 @@ import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@/users/entities/user.entity';
 
+// You would need to create this service and define its methods
+// For demonstration, we'll just simulate it.
+class JwtBlacklistService {
+  private blacklistedTokens: Set<string> = new Set();
+
+  async addToken(token: string, expirationTime: number): Promise<void> {
+    // In a real application, you'd store this in a persistent store like Redis
+    // and set an expiration for the token in the blacklist.
+    this.blacklistedTokens.add(token);
+    setTimeout(() => {
+      this.blacklistedTokens.delete(token);
+    }, expirationTime * 1000); // Convert seconds to milliseconds
+    console.log(`Token added to blacklist. Current blacklist size: ${this.blacklistedTokens.size}`);
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    return this.blacklistedTokens.has(token);
+  }
+}
+
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
   private readonly googleClientId: string;
+  // Instantiate the blacklist service (in a real app, this would be injected)
+  private readonly jwtBlacklistService: JwtBlacklistService;
 
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
-    // Fix: Handle undefined GOOGLE_CLIENT_ID properly
     const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
     if (!clientId) {
       console.error('GOOGLE_CLIENT_ID is not defined in environment variables.');
@@ -31,12 +52,12 @@ export class AuthService {
     }
     this.googleClientId = clientId;
     this.googleClient = new OAuth2Client(this.googleClientId);
+    this.jwtBlacklistService = new JwtBlacklistService(); // In a real app, inject this
   }
 
   // Validasi user saat login (untuk login dengan email/password lokal)
   async validateUser(email: string, pass: string): Promise<Omit<User, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    // Jika user tidak ditemukan ATAU user ada tapi tidak punya password (social login)
     if (!user || !user.password) {
       throw new UnauthorizedException('Email atau password salah');
     }
@@ -44,7 +65,6 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email atau password salah');
     }
-    // Kembalikan user tanpa password
     const { password, ...result } = user;
     return result;
   }
@@ -71,18 +91,15 @@ export class AuthService {
     }
 
     const hashedPassword = await this.hashPassword(data.password);
-    // Hapus confirmPassword dari objek data sebelum dikirim ke UserService
     const { confirmPassword, ...userDataToCreate } = data;
 
     return this.usersService.create({
       name: userDataToCreate.name,
       email: userDataToCreate.email,
-      password: hashedPassword, // Simpan password yang sudah di-hash
-      // googleId dan profilePicture akan undefined untuk user register lokal
+      password: hashedPassword,
     });
   }
 
-  // --- FIXED: Metode untuk Login Google dengan proper type checking ---
   async googleLogin(token: string): Promise<any> {
     try {
       const ticket = await this.googleClient.verifyIdToken({
@@ -91,8 +108,7 @@ export class AuthService {
       });
 
       const payload = ticket.getPayload();
-      
-      // Fix: Check if payload exists before accessing its properties
+
       if (!payload) {
         throw new BadRequestException('Token Google tidak valid - payload kosong.');
       }
@@ -109,23 +125,19 @@ export class AuthService {
       let user = await this.usersService.findByEmail(email);
 
       if (!user) {
-        // Jika user belum ada, buat user baru
-        // Create new user for Google OAuth
         user = await this.usersService.create({
           name: name || 'Google User',
           email: email,
-          // password is optional, so we don't set it for Google OAuth users
           googleId: googleId,
           profilePicture: profilePicture,
         });
       } else {
-        // Jika user sudah ada, update informasi Google jika diperlukan
         if (user.password) {
           console.warn(`User with email ${email} already exists with a local password. Linking Google ID.`);
         }
 
         let needsUpdate = false;
-        const updateData: any = {}; // Use any temporarily or create proper UpdateUserDto
+        const updateData: any = {};
 
         if (!user.googleId && googleId) {
           updateData.googleId = googleId;
@@ -142,9 +154,6 @@ export class AuthService {
 
         if (needsUpdate) {
           await this.usersService.update(user.id, updateData);
-          
-          // Fix: Use proper method to get updated user
-          // If findById doesn't exist, use findByEmail again or implement findById
           const updatedUser = await this.usersService.findByEmail(email);
           if (updatedUser) {
             user = updatedUser;
@@ -152,12 +161,10 @@ export class AuthService {
         }
       }
 
-      // Fix: Add null check for user before accessing properties
       if (!user) {
         throw new UnauthorizedException('Gagal memproses data user setelah Google login.');
       }
 
-      // Generate token aplikasi Anda sendiri untuk user yang login via Google
       const payloadJwt = { email: user.email, sub: user.id };
       return {
         message: 'Login dengan Google berhasil!',
@@ -172,15 +179,38 @@ export class AuthService {
 
     } catch (error) {
       console.error('Error verifying Google token or processing user:', error);
-      // Untuk keamanan, berikan pesan error yang generik ke frontend
       if (error instanceof UnauthorizedException || error instanceof BadRequestException || error instanceof ConflictException) {
-         throw error; // Lempar ulang jika itu adalah exception yang sudah spesifik
+        throw error;
       }
       throw new UnauthorizedException('Verifikasi token Google gagal atau terjadi kesalahan internal.');
     }
   }
 
-  // Fungsi private untuk hashing password
+  // --- NEW: Metode Logout ---
+  async logout(token: string): Promise<{ message: string }> {
+    try {
+      // Decode the token to get its expiration time
+      const decodedToken = this.jwtService.decode(token);
+      if (!decodedToken || typeof decodedToken !== 'object' || !('exp' in decodedToken)) {
+        throw new BadRequestException('Token tidak valid atau tidak memiliki waktu kedaluwarsa.');
+      }
+
+      const expirationTime = decodedToken.exp - Math.floor(Date.now() / 1000); // Remaining time in seconds
+
+      if (expirationTime <= 0) {
+        return { message: 'Token sudah kedaluwarsa, tidak perlu logout.' };
+      }
+
+      // Add the token to the blacklist
+      await this.jwtBlacklistService.addToken(token, expirationTime);
+      return { message: 'Berhasil logout, token telah diblacklist.' };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw new UnauthorizedException('Gagal logout.');
+    }
+  }
+  // --- END NEW ---
+
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return bcrypt.hash(password, saltRounds);

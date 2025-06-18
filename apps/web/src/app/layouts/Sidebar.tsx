@@ -1,6 +1,9 @@
 // src/components/layouts/Sidebar.tsx
-
+"use client";
 import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios'; // Ensure axios is installed in your Next.js project
+
 import {
   BarChart3,
   Calendar,
@@ -32,11 +35,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
 }) => {
+  const router = useRouter();
+
   // Dynamic scrollbar styles for WebKit browsers
   useEffect(() => {
-    // Create unique class name for this sidebar instance
-    const uniqueClass = `sidebar-scroll-${isDarkMode ? 'dark' : 'light'}`;
-    
+    // It's generally better to manage global styles (like scrollbars) in a dedicated CSS file
+    // or through a global style provider if you only need one instance.
+    // However, if this is how you prefer to handle it, ensure it's not creating
+    // too many <style> tags or causing performance issues.
+
     const style = document.createElement('style');
     style.id = 'sidebar-scrollbar-style';
     style.textContent = `
@@ -55,17 +62,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         background: ${isDarkMode ? '#6b7280' : '#6b7280'};
       }
     `;
-    
-    // Remove existing style
+
     const existingStyle = document.querySelector('#sidebar-scrollbar-style');
     if (existingStyle) {
       existingStyle.remove();
     }
-    
-    // Add new style
+
     document.head.appendChild(style);
-    
-    // Cleanup on unmount
+
     return () => {
       const styleToRemove = document.querySelector('#sidebar-scrollbar-style');
       if (styleToRemove) {
@@ -136,6 +140,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        console.log('No token found client-side. Redirecting to login.');
+        router.push('/auth/login');
+        return;
+      }
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      localStorage.removeItem('accessToken');
+      router.push('/login');
+    } catch (error: unknown) { // <--- Explicitly type error as unknown
+      console.error('Logout failed:', error);
+      localStorage.removeItem('accessToken');
+      router.push('/login');
+
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`Logout error: ${error.response.data.message || 'An unexpected error occurred from server.'}`);
+      } else if (error instanceof Error) { // <--- Handle generic Error instances
+        alert(`Logout error: ${error.message}`);
+      } else { // <--- Fallback for truly unknown types
+        alert('An unexpected error occurred during logout.');
+      }
+    }
+  };
+
   return (
     <div
       className={`fixed left-0 top-0 h-full z-40 transition-all duration-300 ${
@@ -180,13 +221,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation - Adjust height to fill remaining space with responsive scrollbar */}
-      <div 
+      <div
         className="sidebar-scroll flex flex-col h-[calc(100%-4rem)] overflow-y-auto"
         style={{
           scrollbarWidth: 'thin',
-          scrollbarColor: isDarkMode 
+          scrollbarColor: isDarkMode
             ? '#4b5563 #1f2937' // thumb track for dark mode
-            : '#9ca3af #f3f4f6'  // thumb track for light mode
+            : '#9ca3af #f3f4f6', // thumb track for light mode
         }}
       >
         <nav className="flex-1 p-4">
@@ -199,9 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   item.active
                     ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400'
                     : isDarkMode
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`} 
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
               >
                 <div className="flex-shrink-0">{item.icon}</div>
                 {/* Text only visible if not collapsed, add a transition for smoothness */}
@@ -253,6 +294,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Logout button */}
             <button
+              onClick={handleLogout}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                 isDarkMode
                   ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
