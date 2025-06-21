@@ -20,16 +20,13 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
         autoLoadEntities: true,
         // Add connection timeout settings
         connectTimeout: 60000, // 60 seconds
-        acquireTimeout: 60000,
-        timeout: 60000,
         retryAttempts: 5,
         retryDelay: 3000,
         // Additional MySQL options for Railway
         extra: {
           connectionLimit: 10,
-          acquireTimeout: 60000,
-          timeout: 60000,
-          reconnect: true,
+          idleTimeout: 300000, // 5 minutes
+          timezone: '+00:00',
         },
       };
     }
@@ -59,16 +56,13 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
       autoLoadEntities: true,
       // Connection timeout settings
       connectTimeout: 60000,
-      acquireTimeout: 60000,
-      timeout: 60000,
       retryAttempts: 5,
       retryDelay: 3000,
       // Additional connection options
       extra: {
         connectionLimit: 10,
-        acquireTimeout: 60000,
-        timeout: 60000,
-        reconnect: true,
+        idleTimeout: 300000, // 5 minutes
+        timezone: '+00:00',
       },
     };
   },
