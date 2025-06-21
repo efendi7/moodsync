@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import { MoodEntry } from '@/mood-entry/entities/mood-entry.entity';
+import { MoodEntry } from '../../mood-entry/entities/mood-entry.entity';
 
 @Entity('users') // Nama tabel di database
 export class User {

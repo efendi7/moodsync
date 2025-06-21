@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid';
 
 interface RegisterData {
   name: string;
@@ -225,9 +224,9 @@ const RegisterPage: React.FC = () => {
     <div className="flex items-center gap-3 w-full">
       <div className="flex-shrink-0">
         {condition ? (
-          <CheckCircleIcon className="w-5 h-5 text-emerald-400" />
+          <CheckCircle className="w-5 h-5 text-emerald-400" />
         ) : (
-          <XCircleIcon className="w-5 h-5 text-red-400" />
+          <XCircle className="w-5 h-5 text-red-400" />
         )}
       </div>
       <span className="text-xs text-gray-700">{description}</span>
