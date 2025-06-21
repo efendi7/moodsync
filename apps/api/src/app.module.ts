@@ -1,7 +1,9 @@
-// src/app.module.ts
+// Tidak perlu meng-assign ke global
 import { randomUUID } from 'crypto';
-// Make crypto available globally
-(global as any).crypto = { randomUUID };
+
+const uuid = randomUUID();
+console.log(uuid);
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
