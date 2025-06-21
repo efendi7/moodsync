@@ -64,7 +64,7 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
         type: 'mysql' as const,
         url: connectionUrl,
         entities: [User, MoodEntry],
-        synchronize: nodeEnv !== 'production', // Hanya sync di development
+        synchronize: true,
         autoLoadEntities: true,
         logging: nodeEnv === 'development' ? ['query', 'error'] : ['error'], // Log query di development
         
