@@ -3,8 +3,8 @@ import { LoginCredentials, RegisterData, AuthResponse } from './types/auth.types
 
 export const authApi = {
   login: (credentials: LoginCredentials): Promise<AuthResponse> =>
-    apiClient.post('/api/v1/auth/login', credentials),
+    apiClient.post('/auth/login', credentials),
 
   register: (userData: RegisterData): Promise<AuthResponse> =>
-    apiClient.post('/api/v1/auth/register', userData),
+    apiClient.post('/auth/register', userData),
 };
