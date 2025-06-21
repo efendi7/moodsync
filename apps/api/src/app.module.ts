@@ -1,13 +1,15 @@
-// Tidak perlu meng-assign ke global
-import { randomUUID } from 'crypto';
+// Patch untuk mendukung crypto.randomUUID di Node.js < 20
+import { webcrypto } from 'crypto';
 
-const uuid = randomUUID();
-console.log(uuid);
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = webcrypto;
+}
 
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfigAsync } from './config/typeorm.config';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -17,10 +19,9 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env', // Ensure this is correct for your .env file location
+      envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync(typeOrmConfigAsync),
-    
     UsersModule,
     AuthModule,
   ],
