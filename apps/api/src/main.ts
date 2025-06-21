@@ -1,4 +1,3 @@
-
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
@@ -11,7 +10,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global Validation Pipe
+  // === Global Validation Pipe ===
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -20,38 +19,47 @@ async function bootstrap() {
     }),
   );
 
-  // CORS Configuration
+  // === CORS Configuration ===
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://moodsync-web-production.up.railway.app',
+  ];
+
   app.enableCors({
-    origin: [ process.env.CORS_ORIGIN || 'http://localhost:3000',  'https://moodsync-web-production.up.railway.app',],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
 
-  // Global API Prefix
-  app.setGlobalPrefix(process.env.API_PREFIX || 'api/v1');
+  console.log('✅ Allowed CORS origins:', allowedOrigins);
+
+  // === Global API Prefix ===
+  const apiPrefix = process.env.API_PREFIX || 'api/v1';
+  app.setGlobalPrefix(apiPrefix);
 
   // === Swagger Setup ===
   const config = new DocumentBuilder()
     .setTitle('MoodSync API')
     .setDescription('Dokumentasi REST API untuk MoodSync')
     .setVersion('1.0')
-    .addBearerAuth() // jika kamu pakai JWT
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document); // buka http://localhost:5000/docs
+  SwaggerModule.setup('docs', app, document);
 
-  // Dummy user (optional)
+  // === Optional: Dummy test user ===
   try {
     const userService = app.get(UsersService);
-    const password = await bcrypt.hash('password', 10);
+    const email = 'test@example.com';
+    const existingUser = await userService.findByEmail(email);
 
-    const existingUser = await userService.findByEmail('test@example.com');
     if (!existingUser) {
+      const password = await bcrypt.hash('password', 10);
       await userService.create({
         name: 'Test User',
-        email: 'test@example.com',
+        email,
         password,
       });
       console.log('✅ Test user created successfully');
@@ -59,13 +67,15 @@ async function bootstrap() {
       console.log('ℹ️ Test user already exists');
     }
   } catch (error) {
-    console.error('❌ Error creating test user:', error.message);
+    console.error('❌ Error creating test user:', error);
   }
 
+  // === Start App ===
   const port = process.env.PORT || 5000;
   await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
-  console.log(`📘 Swagger docs available at: http://localhost:${port}/docs`);
+
+  console.log(`🚀 App running at: http://localhost:${port}/${apiPrefix}`);
+  console.log(`📘 Swagger docs at: http://localhost:${port}/docs`);
 }
 
 bootstrap().catch((error) => {
