@@ -7,62 +7,112 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
   imports: [ConfigModule],
   inject: [ConfigService],
   useFactory: (configService: ConfigService) => {
-    // Try Railway's MySQL URL first, then fallback to DATABASE_URL
-    const databaseUrl = configService.get<string>('MYSQL_URL') || 
-                       configService.get<string>('DATABASE_URL');
+    // Railway MySQL environment variables
+    const host = configService.get<string>('MYSQLHOST');
+    const port = parseInt(configService.get<string>('MYSQLPORT') || '3306');
+    const username = configService.get<string>('MYSQLUSER');
+    const password = configService.get<string>('MYSQLPASSWORD');
+    const database = configService.get<string>('MYSQLDATABASE');
 
-    if (databaseUrl) {
+    // Fallback to generic DATABASE_* variables if Railway variables not found
+    const fallbackHost = configService.get<string>('DATABASE_HOST');
+    const fallbackPort = parseInt(configService.get<string>('DATABASE_PORT') || '3306');
+    const fallbackUsername = configService.get<string>('DATABASE_USERNAME');
+    const fallbackPassword = configService.get<string>('DATABASE_PASSWORD');
+    const fallbackDatabase = configService.get<string>('DATABASE_NAME');
+
+    // Use Railway variables first, then fallback
+    const dbConfig = {
+      host: host || fallbackHost,
+      port: port || fallbackPort,
+      username: username || fallbackUsername,
+      password: password || fallbackPassword,
+      database: database || fallbackDatabase,
+    };
+
+    // Check if we have Railway's MYSQL_URL (connection string)
+    const mysqlUrl = configService.get<string>('MYSQL_URL');
+    
+    if (mysqlUrl) {
       return {
-        type: 'mysql',
-        url: databaseUrl,
+        type: 'mysql' as const,
+        url: mysqlUrl,
         entities: [User, MoodEntry],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         autoLoadEntities: true,
-        // Add connection timeout settings
-        connectTimeout: 60000, // 60 seconds
-        retryAttempts: 5,
-        retryDelay: 3000,
-        // Additional MySQL options for Railway
+        // Critical: Railway MySQL connection settings
+        connectTimeout: 20000, // Reduced from 60s to 20s
+        acquireTimeout: 20000, // Time to acquire connection from pool
+        timeout: 20000, // Query timeout
+        retryAttempts: 3, // Reduced retry attempts
+        retryDelay: 5000, // Increased delay between retries
+        maxQueryExecutionTime: 30000, // Max time for query execution
+        // Connection pool settings optimized for Railway
         extra: {
-          connectionLimit: 10,
-          idleTimeout: 300000, // 5 minutes
+          connectionLimit: 5, // Reduced connection pool size
+          acquireTimeout: 20000,
+          timeout: 20000,
+          reconnect: true,
+          idleTimeout: 300000,
           timezone: '+00:00',
+          // Railway-specific SSL settings
+          ssl: {
+            rejectUnauthorized: false
+          },
+          // Connection flags for better Railway compatibility
+          flags: [
+            'COMPRESS',
+            'PROTOCOL_41',
+            'TRANSACTIONS',
+            'RESERVED',
+            'SECURE_CONNECTION',
+            'MULTI_STATEMENTS',
+            'MULTI_RESULTS'
+          ]
         },
       };
     }
 
-    // Fallback to individual environment variables
-    // Use Railway's MySQL variables if available
-    const host = configService.get<string>('MYSQLHOST') || 
-                 configService.get<string>('DATABASE_HOST');
-    const port = configService.get<number>('MYSQLPORT') || 
-                 configService.get<number>('DATABASE_PORT') || 3306;
-    const username = configService.get<string>('MYSQLUSER') || 
-                     configService.get<string>('DATABASE_USERNAME');
-    const password = configService.get<string>('MYSQLPASSWORD') || 
-                     configService.get<string>('DATABASE_PASSWORD');
-    const database = configService.get<string>('MYSQLDATABASE') || 
-                     configService.get<string>('DATABASE_NAME');
-
+    // Individual environment variables configuration
     return {
-      type: 'mysql',
-      host,
-      port,
-      username,
-      password,
-      database,
+      type: 'mysql' as const,
+      host: dbConfig.host,
+      port: dbConfig.port,
+      username: dbConfig.username,
+      password: dbConfig.password,
+      database: dbConfig.database,
       entities: [User, MoodEntry],
       synchronize: configService.get<string>('NODE_ENV') !== 'production',
       autoLoadEntities: true,
       // Connection timeout settings
-      connectTimeout: 60000,
-      retryAttempts: 5,
-      retryDelay: 3000,
-      // Additional connection options
+      connectTimeout: 20000,
+      acquireTimeout: 20000,
+      timeout: 20000,
+      retryAttempts: 3,
+      retryDelay: 5000,
+      maxQueryExecutionTime: 30000,
+      // Connection pool and Railway-specific settings
       extra: {
-        connectionLimit: 10,
-        idleTimeout: 300000, // 5 minutes
+        connectionLimit: 5,
+        acquireTimeout: 20000,
+        timeout: 20000,
+        reconnect: true,
+        idleTimeout: 300000,
         timezone: '+00:00',
+        // SSL configuration for Railway
+        ssl: {
+          rejectUnauthorized: false
+        },
+        // MySQL connection flags
+        flags: [
+          'COMPRESS',
+          'PROTOCOL_41', 
+          'TRANSACTIONS',
+          'RESERVED',
+          'SECURE_CONNECTION',
+          'MULTI_STATEMENTS',
+          'MULTI_RESULTS'
+        ]
       },
     };
   },
