@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // CORS Configuration
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: [ process.env.CORS_ORIGIN || 'http://localhost:3000',  'https://moodsync-web-production.up.railway.app',],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
