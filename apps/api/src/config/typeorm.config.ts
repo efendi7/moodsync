@@ -49,7 +49,7 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
     }
 
     // Prioritas: MYSQL_URL > DATABASE_URL > individual variables
-    const connectionUrl = mysqlUrl || fallbackUrl;
+    const connectionUrl =  mysqlPublicUrl || mysqlUrl || fallbackUrl;
     const finalHost = host || fallbackHost;
     const finalPort = port || fallbackPort;
     const finalUsername = username || fallbackUsername;
