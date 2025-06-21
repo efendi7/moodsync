@@ -1,4 +1,7 @@
 // src/app.module.ts
+import { randomUUID } from 'crypto';
+// Make crypto available globally
+(global as any).crypto = { randomUUID };
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
