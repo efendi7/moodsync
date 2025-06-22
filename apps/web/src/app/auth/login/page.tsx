@@ -117,7 +117,7 @@ const LoginPage: React.FC = () => {
       const decoded: DecodedGoogleToken = jwtDecode(response.credential);
       console.log('Google Login Success (decoded):', decoded);
 
-      const backendResponse = await fetch('http://localhost:5000/api/v1/auth/google-login', {
+      const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -118,7 +118,7 @@ const RegisterPage: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`,
+  `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           method: 'POST',
           headers: {
@@ -173,7 +173,7 @@ const RegisterPage: React.FC = () => {
       console.log('Google Login Success (decoded):', decoded);
 
       const backendResponse = await fetch(
-        'http://localhost:5000/api/v1/auth/google-login',
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/google-login`,
         {
           method: 'POST',
           headers: {
@@ -219,20 +219,21 @@ const RegisterPage: React.FC = () => {
     setLoading(false);
   };
 
-  function renderValidationItem(condition: boolean, description: string) {
-    return (
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex-shrink-0">
-          {condition ? (
-            <CheckCircle className="w-5 h-5 text-emerald-400" />
-          ) : (
-            <XCircle className="w-5 h-5 text-red-400" />
-          )}
-        </div>
-        <span className="text-xs text-gray-700">{description}</span>
+ function renderValidationItem(condition: boolean, description: string) {
+  return (
+    <div className="flex items-center gap-3 w-full">
+      <div className="flex-shrink-0">
+        {condition ? (
+          <CheckCircle className="w-5 h-5 text-emerald-400" />
+        ) : (
+          <XCircle className="w-5 h-5 text-red-400" />
+        )}
       </div>
-    );
-  }
+      <span className="text-xs text-gray-700">{description}</span>
+    </div>
+  );
+}
+
 
   return (
     <div
