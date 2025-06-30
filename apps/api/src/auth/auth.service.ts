@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -11,23 +12,26 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole, SubscriptionPlan } from '../users/entities/user.entity'; // Import UserRole dan SubscriptionPlan langsung
+import { UserResponseDto } from '../users/dto/user-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto'; // Import CreateUserDto
+// import { GoogleLoginDto } from './dto/google-login.dto'; // Import jika perlu
 
-// You would need to create this service and define its methods
-// For demonstration, we'll just simulate it.
 class JwtBlacklistService {
   private blacklistedTokens: Set<string> = new Set();
-
-  async addToken(token: string, expirationTime: number): Promise<void> {
-    // In a real application, you'd store this in a persistent store like Redis
-    // and set an expiration for the token in the blacklist.
+  async addToken(token: string, expiryTimeInSeconds: number): Promise<void> {
+    if (expiryTimeInSeconds <= 0) {
+      console.warn('Attempted to blacklist an already expired token. Skipping.');
+      return;
+    }
     this.blacklistedTokens.add(token);
     setTimeout(() => {
       this.blacklistedTokens.delete(token);
-    }, expirationTime * 1000); // Convert seconds to milliseconds
+      console.log(`Token removed from blacklist after expiration.`);
+    }, expiryTimeInSeconds * 1000);
     console.log(`Token added to blacklist. Current blacklist size: ${this.blacklistedTokens.size}`);
   }
-
   async isTokenBlacklisted(token: string): Promise<boolean> {
     return this.blacklistedTokens.has(token);
   }
@@ -37,7 +41,6 @@ class JwtBlacklistService {
 export class AuthService {
   private googleClient: OAuth2Client;
   private readonly googleClientId: string;
-  // Instantiate the blacklist service (in a real app, this would be injected)
   private readonly jwtBlacklistService: JwtBlacklistService;
 
   constructor(
@@ -52,55 +55,65 @@ export class AuthService {
     }
     this.googleClientId = clientId;
     this.googleClient = new OAuth2Client(this.googleClientId);
-    this.jwtBlacklistService = new JwtBlacklistService(); // In a real app, inject this
+    this.jwtBlacklistService = new JwtBlacklistService();
   }
 
-  // Validasi user saat login (untuk login dengan email/password lokal)
-  async validateUser(email: string, pass: string): Promise<Omit<User, 'password'> | null> {
+  async validateUser(email: string, pass: string): Promise<Omit<User, 'password_hash'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (!user || !user.password) {
+    if (!user || !user.password_hash) { // Fix: use password_hash
       throw new UnauthorizedException('Email atau password salah');
     }
-    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    const isPasswordValid = await bcrypt.compare(pass, user.password_hash); // Fix: use password_hash
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email atau password salah');
     }
-    const { password, ...result } = user;
+    const { password_hash, ...result } = user;
     return result;
   }
 
-  // Generate token JWT dan kembalikan data user yang diperlukan
-  async login(user: Omit<User, 'password'>): Promise<{ access_token: string; user: { id: number; email: string; name: string; profilePicture?: string } }> {
-    const payload = { email: user.email, sub: user.id };
+  async login(user: Omit<User, 'password_hash'>): Promise<{ access_token: string; user: UserResponseDto }> {
+    const payload = { email: user.email, sub: user.id }; // Fix: user.id is string
+    const accessToken = this.jwtService.sign(payload);
+    const userResponse = new UserResponseDto(user); // Fix: Use user directly
     return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        profilePicture: user.profilePicture,
-      },
+      access_token: accessToken,
+      user: userResponse,
     };
   }
 
-  // Registrasi user baru (dengan password lokal)
-  async register(data: RegisterDto): Promise<any> {
-    const existing = await this.usersService.findByEmail(data.email);
-    if (existing) {
+  async register(data: RegisterDto): Promise<UserResponseDto> {
+    const existingUserByEmail = await this.usersService.findByEmail(data.email);
+    if (existingUserByEmail) {
       throw new ConflictException('Email sudah terdaftar');
+    }
+    const existingUserByUsername = await this.usersService.findByUsername(data.username); // Fix: usersService.findByUsername exists now
+    if (existingUserByUsername) {
+      throw new ConflictException('Username sudah digunakan');
     }
 
     const hashedPassword = await this.hashPassword(data.password);
-    const { confirmPassword, ...userDataToCreate } = data;
 
-    return this.usersService.create({
-      name: userDataToCreate.name,
-      email: userDataToCreate.email,
-      password: hashedPassword,
-    });
+    // Fix: Ensure all properties of CreateUserDto are provided or are optional in DTO
+    const createUserDto: CreateUserDto = {
+      email: data.email,
+      username: data.username, // Fix: username exists on RegisterDto
+      password_hash: hashedPassword, // Fix: use password_hash
+      full_name: data.full_name || data.username,
+      avatar_url: data.avatar_url,
+      timezone: data.timezone,
+      language: data.language,
+      role: UserRole.PERSONAL, // Fix: Access UserRole directly from import
+      subscription_plan: SubscriptionPlan.FREE, // Fix: Access SubscriptionPlan directly from import
+      onboarding_completed: false, // Default value
+      privacy_settings: {}, // Default value
+      email_verified_at: null, // Default value
+    };
+
+    const newUser = await this.usersService.create(createUserDto); // Fix: createUserDto type
+    return new UserResponseDto(newUser);
   }
 
-  async googleLogin(token: string): Promise<any> {
+  async googleLogin(token: string): Promise<{ message: string; access_token: string; user: UserResponseDto }> {
     try {
       const ticket = await this.googleClient.verifyIdToken({
         idToken: token,
@@ -108,13 +121,12 @@ export class AuthService {
       });
 
       const payload = ticket.getPayload();
-
       if (!payload) {
         throw new BadRequestException('Token Google tidak valid - payload kosong.');
       }
 
       const email = payload.email;
-      const name = payload.name;
+      const full_name = payload.name; // Fix: use full_name
       const googleId = payload.sub;
       const profilePicture = payload.picture;
 
@@ -125,26 +137,34 @@ export class AuthService {
       let user = await this.usersService.findByEmail(email);
 
       if (!user) {
-        user = await this.usersService.create({
-          name: name || 'Google User',
+        const createGoogleUserDto: CreateUserDto = {
           email: email,
+          username: email.split('@')[0] || googleId, // Fallback if email has no '@'
+          full_name: full_name || 'Google User',
           googleId: googleId,
           profilePicture: profilePicture,
-        });
+          password_hash: null, // Google login users don't have local password_hash
+          role: UserRole.PERSONAL, // Fix: Access UserRole directly
+          subscription_plan: SubscriptionPlan.FREE, // Fix: Access SubscriptionPlan directly
+          onboarding_completed: false,
+          privacy_settings: {},
+          email_verified_at: new Date(),
+        };
+        user = await this.usersService.create(createGoogleUserDto); // Fix: createUserDto type
       } else {
-        if (user.password) {
+        if (user.password_hash) { // Fix: Check password_hash
           console.warn(`User with email ${email} already exists with a local password. Linking Google ID.`);
         }
 
         let needsUpdate = false;
-        const updateData: any = {};
+        const updateData: Partial<User> = {};
 
         if (!user.googleId && googleId) {
           updateData.googleId = googleId;
           needsUpdate = true;
         }
-        if (user.name !== name && name) {
-          updateData.name = name;
+        if (user.full_name !== full_name && full_name) { // Fix: Check full_name
+          updateData.full_name = full_name;
           needsUpdate = true;
         }
         if (user.profilePicture !== profilePicture && profilePicture) {
@@ -153,7 +173,7 @@ export class AuthService {
         }
 
         if (needsUpdate) {
-          await this.usersService.update(user.id, updateData);
+          await this.usersService.update(user.id, updateData); // Fix: user.id is string
           const updatedUser = await this.usersService.findByEmail(email);
           if (updatedUser) {
             user = updatedUser;
@@ -162,54 +182,43 @@ export class AuthService {
       }
 
       if (!user) {
-        throw new UnauthorizedException('Gagal memproses data user setelah Google login.');
+        throw new InternalServerErrorException('Gagal memproses data user setelah Google login.');
       }
 
       const payloadJwt = { email: user.email, sub: user.id };
+      const accessToken = this.jwtService.sign(payloadJwt);
+
       return {
         message: 'Login dengan Google berhasil!',
-        access_token: this.jwtService.sign(payloadJwt),
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          profilePicture: user.profilePicture,
-        },
+        access_token: accessToken,
+        user: new UserResponseDto(user),
       };
-
     } catch (error) {
       console.error('Error verifying Google token or processing user:', error);
       if (error instanceof UnauthorizedException || error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
       }
-      throw new UnauthorizedException('Verifikasi token Google gagal atau terjadi kesalahan internal.');
+      throw new InternalServerErrorException('Verifikasi token Google gagal atau terjadi kesalahan internal.');
     }
   }
 
-  // --- NEW: Metode Logout ---
   async logout(token: string): Promise<{ message: string }> {
     try {
-      // Decode the token to get its expiration time
       const decodedToken = this.jwtService.decode(token);
       if (!decodedToken || typeof decodedToken !== 'object' || !('exp' in decodedToken)) {
         throw new BadRequestException('Token tidak valid atau tidak memiliki waktu kedaluwarsa.');
       }
-
-      const expirationTime = decodedToken.exp - Math.floor(Date.now() / 1000); // Remaining time in seconds
-
-      if (expirationTime <= 0) {
-        return { message: 'Token sudah kedaluwarsa, tidak perlu logout.' };
-      }
-
-      // Add the token to the blacklist
+      const expirationTime = decodedToken.exp - Math.floor(Date.now() / 1000);
       await this.jwtBlacklistService.addToken(token, expirationTime);
       return { message: 'Berhasil logout, token telah diblacklist.' };
     } catch (error) {
       console.error('Error during logout:', error);
-      throw new UnauthorizedException('Gagal logout.');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Gagal logout.');
     }
   }
-  // --- END NEW ---
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;

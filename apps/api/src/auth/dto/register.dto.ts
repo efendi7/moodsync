@@ -6,16 +6,23 @@ import {
   Matches,
   IsString,
   ValidateIf,
-  Validate, // Import dekorator Validate
+  Validate,
+  IsOptional, // <-- Tambahkan IsOptional
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { MatchPasswordConstraint } from '../../common/validators/match-password.validator'; // Import custom validator Anda
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'; // <-- Tambahkan ApiPropertyOptional
+import { MatchPasswordConstraint } from '../../common/validators/match-password.validator';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'John Doe', description: 'Nama lengkap pengguna' })
-  @IsNotEmpty({ message: 'Nama lengkap harus diisi.' })
-  @IsString({ message: 'Nama harus berupa string.' })
-  name: string;
+  @ApiProperty({ example: 'moodsync_user', description: 'Username unik pengguna' })
+  @IsNotEmpty({ message: 'Username harus diisi.' })
+  @IsString({ message: 'Username harus berupa string.' })
+  @MinLength(3, { message: 'Username minimal 3 karakter.' })
+  username: string; // <-- Perubahan: Dari 'name' menjadi 'username'
+
+  @ApiPropertyOptional({ example: 'John Doe', description: 'Nama lengkap pengguna (opsional)' })
+  @IsOptional() // <-- Perubahan: Jadikan opsional
+  @IsString({ message: 'Nama lengkap harus berupa string.' })
+  full_name?: string; // <-- Perubahan: Dari 'name' menjadi 'full_name' dan opsional
 
   @ApiProperty({
     example: 'johndoe@example.com',
@@ -47,7 +54,21 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Konfirmasi password harus diisi.' })
   @IsString({ message: 'Konfirmasi password harus berupa string.' })
   @ValidateIf((o) => o.password !== undefined && o.password !== null && o.password.length > 0)
-  // Gunakan @Validate dengan custom validator Anda
-  @Validate(MatchPasswordConstraint, ['password']) // Parameter kedua adalah nama properti yang akan dibandingkan
+  @Validate(MatchPasswordConstraint, ['password'], { message: 'Konfirmasi password tidak cocok dengan password.' }) // <-- Tambahkan pesan error untuk validator kustom
   confirmPassword: string;
+
+  @ApiPropertyOptional({ description: 'URL avatar pengguna', example: 'https://example.com/avatar.jpg' })
+  @IsOptional()
+  @IsString({ message: 'URL avatar harus berupa string.' })
+  avatar_url?: string; // <-- Tambahkan sesuai skema User
+
+  @ApiPropertyOptional({ description: 'Zona waktu pengguna (misal: "Asia/Jakarta")', example: 'Asia/Jakarta' })
+  @IsOptional()
+  @IsString({ message: 'Zona waktu harus berupa string.' })
+  timezone?: string; // <-- Tambahkan sesuai skema User
+
+  @ApiPropertyOptional({ description: 'Bahasa pilihan pengguna (misal: "id-ID")', example: 'id-ID' })
+  @IsOptional()
+  @IsString({ message: 'Bahasa harus berupa string.' })
+  language?: string; // <-- Tambahkan sesuai skema User
 }

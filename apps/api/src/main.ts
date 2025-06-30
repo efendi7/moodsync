@@ -7,6 +7,10 @@ import * as bcrypt from 'bcrypt';
 // === Swagger Import ===
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
+// === Import DTO dan Enums yang diperlukan untuk seeding ===
+import { CreateUserDto } from './users/dto/create-user.dto';
+import { UserRole, SubscriptionPlan } from './users/entities/user.entity'; // Pastikan UserRole dan SubscriptionPlan diimpor
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -31,7 +35,6 @@ async function bootstrap() {
 
   app.enableCors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, Postman, etc.)
       if (!origin) return callback(null, true);
       
       if (allowedOrigins.indexOf(origin) !== -1) {
@@ -53,7 +56,7 @@ async function bootstrap() {
     ],
     credentials: true,
     preflightContinue: false,
-    optionsSuccessStatus: 204, // For legacy browser support
+    optionsSuccessStatus: 204,
   });
 
   console.log('✅ Allowed CORS origins:', allowedOrigins);
@@ -81,12 +84,22 @@ async function bootstrap() {
       const existingUser = await userService.findByEmail(email);
 
       if (!existingUser) {
-        const password = await bcrypt.hash('password', 10);
-        await userService.create({
-          name: 'Test User',
-          email,
-          password,
-        });
+        const hashedPassword = await bcrypt.hash('password', 10); // Hash password
+        
+        // --- PERBAIKAN DI SINI ---
+        const testUserDto: CreateUserDto = {
+          username: 'testuser', // <-- Gunakan username
+          full_name: 'Test User', // <-- Gunakan full_name
+          email: email,
+          password_hash: hashedPassword, // <-- Gunakan password_hash
+          // Tambahkan properti wajib lainnya jika ada di CreateUserDto dan belum ada nilai default
+          role: UserRole.PERSONAL, // <-- Contoh: Set role default
+          subscription_plan: SubscriptionPlan.FREE, // <-- Contoh: Set subscription_plan default
+          onboarding_completed: false, // Contoh: Set default
+          privacy_settings: {}, // Contoh: Set default
+          // created_at dan updated_at akan diisi otomatis oleh TypeORM
+        };
+        await userService.create(testUserDto); // Kirim objek DTO yang sesuai
         console.log('✅ Test user created successfully');
       } else {
         console.log('ℹ️ Test user already exists');
@@ -97,10 +110,8 @@ async function bootstrap() {
   }
 
   // === Railway specific configurations ===
-  // Trust proxy for Railway
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   
-  // Add health check endpoint
   app.getHttpAdapter().get('/health', (req, res) => {
     res.status(200).json({ 
       status: 'OK', 

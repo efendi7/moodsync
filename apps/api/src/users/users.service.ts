@@ -1,49 +1,55 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+// src/users/users.service.ts
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole, SubscriptionPlan } from './entities/user.entity'; // Import enums from User entity
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserProfile } from '../user-profile/entities/user-profile.entity'; 
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto'; // Make sure this DTO is defined
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>,  @InjectRepository(UserProfile) // Injeksi UserProfileRepository
+    private userProfileRepository: Repository<UserProfile>,
   ) {}
 
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.userRepository.find({
-      select: ['id', 'name', 'email', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
+      select: [
+        'id', 'username', 'email', 'full_name', 'profilePicture', 'googleId',
+        'created_at', 'updated_at', 'avatar_url', 'timezone', 'language',
+        'role', 'subscription_plan', 'subscription_expires_at',
+        'email_verified_at', 'onboarding_completed',
+      ], // Fix: use correct property names (snake_case, full_name, username)
     });
-
     return users.map((user) => new UserResponseDto(user));
   }
 
-  async findOne(id: number): Promise<UserResponseDto> {
+  async findOne(id: string): Promise<UserResponseDto> { // Fix: id is string
     const user = await this.userRepository.findOne({
-      where: { id },
-      select: ['id', 'name', 'email', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
+      where: { id }, // Fix: id is string
+      select: [
+        'id', 'username', 'email', 'full_name', 'profilePicture', 'googleId',
+        'created_at', 'updated_at', 'avatar_url', 'timezone', 'language',
+        'role', 'subscription_plan', 'subscription_expires_at',
+        'email_verified_at', 'onboarding_completed',
+      ], // Fix: use correct property names
     });
-
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-
     return new UserResponseDto(user);
   }
 
-  // ADD: Missing findById method that AuthService needs
-  async findById(id: number): Promise<User | null> {
+  // ADD: Missing findById method that AuthService needs - this should return User entity directly
+  async findById(id: string): Promise<User | null> { // Fix: id is string
     return await this.userRepository.findOne({
-      where: { id },
+      where: { id }, // Fix: id is string
     });
   }
 
@@ -53,101 +59,114 @@ export class UsersService {
     });
   }
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  // Add findByUsername method for consistency with AuthService
+  async findByUsername(username: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { username },
+    });
+  }
+
+ async create(createUserDto: CreateUserDto): Promise<User> {
     try {
       console.log('🔍 Creating user with email:', createUserDto.email);
-
-      // Check if user already exists
-      const existingUser = await this.findByEmail(createUserDto.email);
-      if (existingUser) {
+      const existingUserByEmail = await this.findByEmail(createUserDto.email);
+      if (existingUserByEmail) {
         throw new ConflictException('Email sudah terdaftar');
       }
+      const existingUserByUsername = await this.findByUsername(createUserDto.username);
+      if (existingUserByUsername) {
+        throw new ConflictException('Username sudah digunakan');
+      }
 
-      // Create new user
+      // 1. Buat User baru
       const user = this.userRepository.create(createUserDto);
       const savedUser = await this.userRepository.save(user);
 
-      console.log('✅ User created successfully with ID:', savedUser.id);
+      // 2. Buat UserProfile dasar untuk user baru
+      const userProfile = this.userProfileRepository.create({
+        user_id: savedUser.id, // Gunakan ID dari user yang baru disimpan
+        user: savedUser, // Hubungkan entitas User ke UserProfile
+        // Anda bisa menambahkan nilai default lain untuk profil di sini jika ada
+      });
+      await this.userProfileRepository.save(userProfile); // Simpan profil
 
-      return new UserResponseDto(savedUser);
+      console.log('✅ User and UserProfile created successfully with ID:', savedUser.id);
+      return savedUser;
     } catch (error) {
       console.error('❌ Error creating user:', error);
       throw error;
     }
   }
-
-  async update(
-    id: number,
-    updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
-    // Check if user exists
-    const existingUser = await this.userRepository.findOne({ where: { id } });
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> { // Fix: id is string
+    const existingUser = await this.userRepository.findOne({ where: { id } }); // Fix: id is string
     if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // Check if email is being updated and if it's already taken
     if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
       const emailExists = await this.findByEmail(updateUserDto.email);
       if (emailExists) {
         throw new ConflictException('Email sudah digunakan');
       }
     }
+    // Handle username update conflict
+    if (updateUserDto.username && updateUserDto.username !== existingUser.username) {
+        const usernameExists = await this.findByUsername(updateUserDto.username);
+        if (usernameExists) {
+            throw new ConflictException('Username sudah digunakan');
+        }
+    }
 
-    await this.userRepository.update(id, updateUserDto);
-    return await this.findOne(id);
+    // Use preload for partial updates on existing entity
+    const userToUpdate = await this.userRepository.preload({ id, ...updateUserDto }); // Fix: id is string
+    if (!userToUpdate) { // Should not happen if existingUser was found
+      throw new NotFoundException(`User with ID ${id} not found after preload`);
+    }
+    const updatedUser = await this.userRepository.save(userToUpdate);
+    return new UserResponseDto(updatedUser); // Return DTO
   }
 
-  async remove(id: number): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({ where: { id } });
+  async remove(id: string): Promise<{ message: string }> { // Fix: id is string
+    const user = await this.userRepository.findOne({ where: { id } }); // Fix: id is string
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    await this.userRepository.delete(id);
-    return { message: `User ${user.name} berhasil dihapus` };
+    await this.userRepository.delete(id); // Fix: id is string
+    return { message: `User ${user.full_name || user.username} berhasil dihapus` }; // Fix: use full_name or username
   }
 
-  async changePassword(
-    id: number,
-    changePasswordDto: ChangePasswordDto,
-  ): Promise<{ message: string }> {
-    const user = await this.userRepository.findOne({ where: { id } });
+  async changePassword(id: string, changePasswordDto: ChangePasswordDto): Promise<{ message: string }> { // Fix: id is string
+    const user = await this.userRepository.findOne({ where: { id } }); // Fix: id is string
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // Check if user has a password (not a social login user)
-    if (!user.password) {
+    if (!user.password_hash) { // Fix: use password_hash
       throw new ConflictException('User tidak memiliki password lokal. Gunakan Google login.');
     }
 
-    // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(
       changePasswordDto.currentPassword,
-      user.password,
+      user.password_hash, // Fix: use password_hash
     );
     if (!isCurrentPasswordValid) {
       throw new ConflictException('Password saat ini salah');
     }
 
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      10,
-    );
+    const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
 
-    // Update password
-    await this.userRepository.update(id, { password: hashedNewPassword });
-
+    await this.userRepository.update(id, { password_hash: hashedNewPassword }); // Fix: use password_hash
     return { message: 'Password berhasil diubah' };
   }
 
-  // Method untuk mendapatkan user dengan password (untuk authentication)
   async findByEmailWithPassword(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'name', 'email', 'password', 'profilePicture', 'googleId', 'createdAt', 'updatedAt'],
+      select: [
+        'id', 'username', 'email', 'password_hash', 'full_name', 'profilePicture', 'googleId',
+        'created_at', 'updated_at',
+      ], // Fix: use correct property names (password_hash, full_name, created_at, updated_at)
     });
   }
 }

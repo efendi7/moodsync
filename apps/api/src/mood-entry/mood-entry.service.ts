@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// src/mood-entry/mood-entry.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common'; // Import NotFoundException
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoodEntry } from './entities/mood-entry.entity';
@@ -11,29 +12,30 @@ export class MoodEntryService {
     private moodRepo: Repository<MoodEntry>,
   ) {}
 
-  async create(userId: string, dto: CreateMoodEntryDto) {
+  async create(userId: string, dto: CreateMoodEntryDto): Promise<MoodEntry> { // Fix: userId is string, return MoodEntry
     const entry = this.moodRepo.create({
       ...dto,
-      user: { id: Number(userId) }, // ✅ convert string to number
+      user: { id: userId }, // Fix: id is string, no Number() conversion needed
+      recorded_at: new Date(dto.loggedAt), // Use the loggedAt from DTO for recorded_at in entity
     });
     return this.moodRepo.save(entry);
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string): Promise<MoodEntry[]> { // Fix: userId is string
     return this.moodRepo.find({
-      where: { user: { id: Number(userId) } }, // ✅ convert
-      order: { loggedAt: 'DESC' },
+      where: { user: { id: userId } }, // Fix: id is string
+      order: { recorded_at: 'DESC' }, // Fix: use recorded_at, not loggedAt
     });
   }
 
-  async remove(id: string, userId: number) {
+  async remove(id: string, userId: string): Promise<MoodEntry> { // Fix: id and userId are strings, return MoodEntry
     const entry = await this.moodRepo.findOne({
       where: {
-        id, // ✅ langsung string (UUID)
-        user: { id: userId }, // ✅ number
+        id,
+        user: { id: userId }, // Fix: id is string
       },
     });
-    if (!entry) throw new NotFoundException();
+    if (!entry) throw new NotFoundException('Mood entry not found'); // Fix: throw NotFoundException
     return this.moodRepo.remove(entry);
   }
 }

@@ -1,1 +1,224 @@
-$2b$10$OP3dTr2heVKJAajAxGKuZemoN3mritcYTqnkBNTa6ZpnLIm0oiTsq
+# MoodSync - AI-Powered Mental Wellness & Productivity Platform
+
+## 🎯 Deskripsi Aplikasi
+MoodSync adalah platform digital yang menggunakan AI untuk membantu pengguna memahami dan mengoptimalkan kesehatan mental serta produktivitas mereka. Aplikasi ini menggabungkan mood tracking, habit building, mindfulness, dan analytics cerdas untuk memberikan insights personal yang actionable.
+
+## 🚀 Teknologi Stack
+- **Frontend**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS + Framer Motion
+- **Database**: (MySQL)
+- **Authentication**: NextAuth.js v5
+- **AI Integration**: OpenAI GPT-4 + Gemini API
+- **Charts**: Recharts + D3.js
+- **State Management**: Zustand
+- **Form Handling**: React Hook Form + Zod
+- **Deployment**: Vercel
+- **Analytics**: Posthog
+- **Push Notifications**: OneSignal
+
+## ✨ Fitur Utama
+
+### 🧠 AI-Powered Insights
+- **Smart Mood Analysis**: AI menganalisis pola mood dan memberikan rekomendasi personal
+- **Predictive Wellness**: Prediksi hari-hari yang berpotensi challenging berdasarkan data historis
+- **Personalized Content**: Konten meditasi, artikel, dan tips yang disesuaikan dengan profil pengguna
+- **Voice Emotion Detection**: Analisis emosi dari voice notes harian
+
+### 📊 Advanced Analytics
+- **Mood Patterns**: Visualisasi tren mood dengan berbagai timeframe
+- **Correlation Discovery**: Hubungan antara aktivitas, cuaca, sleep, dan mood
+- **Wellness Score**: Skor kesehatan mental real-time dengan breakdown detail
+- **Progress Tracking**: Monitoring improvement dari waktu ke waktu
+
+### 🎯 Habit & Goal Management
+- **Smart Habit Suggestions**: AI merekomendasikan habit berdasarkan goals dan personality
+- **Adaptive Scheduling**: Jadwal yang menyesuaikan dengan mood dan energy level
+- **Micro-Goals**: Breaking down big goals into achievable daily tasks
+- **Social Accountability**: Share progress dengan accountability partners
+
+---
+
+## 👥 Role Pengguna dan Fitur
+
+### 1. PERSONAL USER (Free & Premium)
+
+**Dashboard Utama:**
+- **Daily Check-in**: Quick mood logging dengan emoji + intensity scale
+- **AI Wellness Assistant**: Chatbot untuk konsultasi dan guidance
+- **Today's Insights**: Summary kondisi mental dan rekomendasi hari ini
+- **Quick Actions**: Akses cepat ke meditasi, journaling, atau breathing exercise
+
+**Mood Tracking:**
+- **Advanced Mood Wheel**: 8 dimensi emosi dengan intensity slider
+- **Context Tagging**: Tag aktivitas, lokasi, people, weather
+- **Photo Mood**: Upload foto yang merepresentasikan mood
+- **Voice Notes**: Record daily reflections dengan AI transcription
+- **Mood Prediction**: AI prediksi mood berdasarkan calendar dan patterns
+
+**Habit Management:**
+- **Habit Builder**: Visual habit creation dengan difficulty adjustment
+- **Streak Tracking**: Gamification dengan rewards dan celebrations
+- **Habit Stacking**: Menggabungkan habits untuk efektivitas maksimal
+- **Smart Reminders**: Notifikasi yang adaptive terhadap schedule dan mood
+- **Habit Analytics**: Deep dive analysis performa habits
+
+**Mindfulness & Wellness:**
+- **Guided Meditations**: Koleksi meditasi dengan berbagai durasi dan tema
+- **Breathing Exercises**: Teknik pernapasan dengan visual guide
+- **Sleep Stories**: Audio untuk membantu tidur berkualitas
+- **Gratitude Journal**: Daily gratitude practice dengan AI insights
+- **Digital Detox**: Tools untuk mengurangi screen time
+
+**Analytics & Insights:**
+- **Mood Calendar**: Heat map mood selama 1 tahun
+- **Pattern Recognition**: AI identifies triggers dan positive patterns
+- **Wellness Reports**: Weekly/monthly comprehensive reports
+- **Goal Progress**: Visual tracking pencapaian personal goals
+- **Correlation Matrix**: Hubungan antar variables dalam hidup
+
+**Social Features:**
+- **Mood Sharing**: Share mood dengan close friends/family
+- **Support Circles**: Private groups untuk mutual support
+- **Anonymous Community**: Forum diskusi dengan moderasi AI
+- **Expert Sessions**: Live sessions dengan psychologists dan wellness experts
+
+### 2. WELLNESS COACH/THERAPIST (Pro Plan)
+
+**Client Management:**
+- **Client Dashboard**: Overview semua klien dengan status terkini
+- **Progress Monitoring**: Real-time tracking progress klien
+- **Session Notes**: Integrated note-taking dengan AI insights
+- **Assignment Tracking**: Monitor completion rate homework dan activities
+
+**Professional Tools:**
+- **Assessment Builder**: Create custom psychological assessments
+- **Treatment Plans**: Structured plans dengan milestones dan adjustments
+- **Resource Library**: Curated content untuk different conditions
+- **Crisis Detection**: AI alerts untuk potential mental health crisis
+
+**Analytics & Reporting:**
+- **Client Analytics**: Detailed insights tentang progress klien
+- **Practice Insights**: Analytics untuk practice management
+- **Outcome Tracking**: Measure effectiveness interventions
+- **Professional Development**: Continuing education tracking
+
+### 3. ORGANIZATION/CORPORATE (Enterprise)
+
+**Team Wellness Dashboard:**
+- **Aggregate Mood Trends**: Anonymous team mood analytics
+- **Wellness Initiatives**: Track participation dan effectiveness programs
+- **Stress Level Monitoring**: Early warning system untuk team burnout
+- **ROI Analytics**: Measure impact wellness programs pada productivity
+
+**Management Tools:**
+- **Wellness Campaigns**: Create dan manage company-wide initiatives
+- **Resource Distribution**: Push targeted content ke specific teams
+- **Anonymous Feedback**: Collect insights tentang workplace culture
+- **Integration Tools**: Connect dengan HRMS dan productivity tools
+
+**Reporting:**
+- **Executive Dashboards**: High-level insights untuk leadership
+- **Department Comparisons**: Cross-team wellness analytics
+- **Trend Analysis**: Long-term organizational wellness trends
+- **Custom Reports**: Tailored reports untuk specific needs
+
+---
+
+## 🔐 Keamanan dan Privacy
+
+### Data Protection:
+- **End-to-End Encryption**: Semua personal data encrypted
+- **HIPAA Compliance**: Medical-grade privacy standards
+- **GDPR Compliant**: European privacy regulations
+- **Anonymous Analytics**: Aggregate data tanpa personal identifiers
+- **User Control**: Full control untuk delete atau export data
+
+### AI Ethics:
+- **Bias Detection**: Regular auditing untuk AI fairness
+- **Transparency**: Clear explanation bagaimana AI makes recommendations
+- **Human Oversight**: Professional review untuk sensitive insights
+- **Opt-out Options**: Users can disable AI features
+
+---
+
+## 🎨 UI/UX Highlights
+
+### Design System:
+- **Adaptive Theming**: UI berubah berdasarkan mood dan time of day
+- **Accessibility First**: WCAG 2.1 AAA compliant
+- **Micro-interactions**: Delightful animations yang tidak overwhelming
+- **Responsive Design**: Seamless experience across all devices
+- **Voice Interface**: Voice commands untuk hands-free interaction
+
+### Personalization:
+- **Custom Color Palettes**: Warna yang match dengan personality
+- **Layout Preferences**: Customizable dashboard layouts
+- **Content Curation**: AI-powered content recommendations
+- **Cultural Sensitivity**: Localized content dan cultural considerations
+
+---
+
+## 📈 Monetization Strategy
+
+### Freemium Model:
+- **Free Tier**: Basic mood tracking, limited insights, ads
+- **Premium ($9.99/month)**: Advanced analytics, unlimited AI insights, premium content
+- **Pro ($29.99/month)**: For coaches/therapists dengan client management tools
+- **Enterprise**: Custom pricing untuk organizations
+
+### Revenue Streams:
+- **Subscription Revenue**: Primary revenue source
+- **In-app Purchases**: Premium content, courses, one-on-one sessions
+- **Corporate Partnerships**: B2B wellness programs
+- **Data Insights**: Anonymous aggregate insights untuk research (opt-in)
+
+---
+
+## 🌟 Unique Value Propositions
+
+1. **AI-First Approach**: Bukan sekedar tracking, tapi actionable AI insights
+2. **Holistic Wellness**: Menggabungkan mental health, productivity, dan lifestyle
+3. **Privacy-Centric**: Medical-grade privacy dengan user full control
+4. **Professional Integration**: Seamless collaboration dengan healthcare providers
+5. **Cultural Adaptability**: Memahami context budaya dan individual differences
+6. **Scientific Backing**: Features berdasarkan evidence-based psychology research
+
+---
+
+## 🎯 Target Market
+
+### Primary Users:
+- **Millennials & Gen Z**: Tech-savvy individuals seeking digital wellness solutions
+- **Remote Workers**: Need tools untuk maintain mental health while WFH
+- **Students**: Academic stress management dan productivity optimization
+- **Parents**: Balancing family life dengan personal wellness
+
+### Professional Market:
+- **Therapists & Counselors**: Digital tools untuk enhance practice
+- **Corporate HR**: Employee wellness dan engagement programs
+- **Educational Institutions**: Student mental health support systems
+- **Healthcare Systems**: Preventive mental health initiatives
+
+---
+
+## 🚀 Future Roadmap
+
+### Phase 1 (Launch):
+- Core mood tracking dan habit management
+- Basic AI insights dan recommendations
+- Web platform dengan responsive design
+
+### Phase 2 (Q2 2025):
+- Mobile app (iOS/Android)
+- Advanced AI features dan predictive analytics
+- Professional tools untuk coaches
+
+### Phase 3 (Q4 2025):
+- Corporate enterprise features
+- Integration dengan wearables dan health apps
+- Advanced community features
+
+### Phase 4 (2026):
+- VR/AR wellness experiences
+- Global expansion dengan localization
+- Research partnerships dengan universities
