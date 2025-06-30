@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') }); // Contoh jika scri
 
 async function createDatabase() {
     // --- PERUBAHAN DI SINI: Paksa penggunaan DATABASE_NAME dari .env ---
-    const dbName = process.env.DATABASE_NAME; 
+      const dbName = process.env.MYSQLDATABASE || process.env.DATABASE_NAME; 
 
     if (!dbName) {
         console.error("Error: DATABASE_NAME is not set in your .env file or not loaded. Please set it (e.g., DATABASE_NAME=moodsync).");
@@ -18,10 +18,10 @@ async function createDatabase() {
     }
     // --- AKHIR PERUBAHAN ---
 
-    const host = process.env.DATABASE_HOST || 'localhost';
-    const port = parseInt(process.env.DATABASE_PORT || '3306');
-    const user = process.env.DATABASE_USERNAME || 'root';
-    const password = process.env.DATABASE_PASSWORD || '';
+   const host = process.env.MYSQL_HOST || process.env.DATABASE_HOST || 'localhost';
+    const port = parseInt(process.env.MYSQL_PORT || process.env.DATABASE_PORT || '3306');
+    const user = process.env.MYSQL_USER || process.env.DATABASE_USERNAME || 'root';
+    const password = process.env.MYSQLPASSWORD || process.env.DATABASE_PASSWORD || '';
 
     let connection;
     try {
