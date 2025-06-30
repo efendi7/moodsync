@@ -65,7 +65,7 @@ const getDatabaseConfig = (): DataSourceOptions => {
     migrations: [join(__dirname, 'src', 'database', 'migrations', '*.{ts,js}')],
     
     logging: ['query', 'error', 'schema'], 
-    synchronize: false, 
+    synchronize: true, 
 
     extra: {
       connectionLimit: 8,

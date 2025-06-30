@@ -1,19 +1,19 @@
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { join } from 'path'; // Tambahkan import join
+import { join } from 'path';
+import { URL } from 'url'; // Penting untuk parsing URL
+
 
 // Import semua entitas Anda di sini.
-// Untuk skalabilitas, lebih baik menggunakan glob pattern (seperti yang dijelaskan di bawah)
-// daripada mengimpor satu per satu jika jumlah entitas sudah banyak.
-// Namun, jika masih sedikit, impor manual tetap jelas.
+// Atau andalkan glob pattern di bawah. Jika Anda mengimpor manual,
+// pastikan baris join(__dirname, '..', '**', '*.entity.{ts,js}') dihapus.
 import { User } from '../users/entities/user.entity';
 import { MoodEntry } from '../mood-entry/entities/mood-entry.entity';
 import { UserProfile } from '../user-profile/entities/user-profile.entity';
 import { Habit } from '../habits/entities/habit.entity';
-// Tambahkan import untuk semua entitas lainnya
+// Tambahkan import untuk semua entitas lainnya jika tidak pakai glob
 // import { DailyCheckin } from '../daily-checkins/entities/daily-checkin.entity';
 // import { WellnessScore } from '../wellness-scores/entities/wellness-score.entity';
-// ... dan seterusnya untuk 28 tabel Anda
 
 export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
   imports: [ConfigModule],
@@ -21,149 +21,151 @@ export const typeOrmConfigAsync: TypeOrmModuleAsyncOptions = {
   useFactory: async (configService: ConfigService) => {
     const nodeEnv = configService.get<string>('NODE_ENV');
 
-    // Railway MySQL service menggunakan MYSQL* variables
-    const mysqlUrl = configService.get<string>('MYSQL_URL'); // Internal connection
-    const mysqlPublicUrl = configService.get<string>('MYSQL_PUBLIC_URL'); // External connection
-    const host = configService.get<string>('MYSQLHOST');
-    const port = parseInt(configService.get<string>('MYSQLPORT') || '3306');
-    const username = configService.get<string>('MYSQLUSER');
-    const password = configService.get<string>('MYSQLPASSWORD') || configService.get<string>('MYSQL_ROOT_PASSWORD');
-    const database = configService.get<string>('MYSQLDATABASE') || configService.get<string>('MYSQL_DATABASE');
+    // Railway MySQL service variables (TANPA UNDERSCORE, berdasarkan screenshot Anda)
+    const railwayHost = configService.get<string>('MYSQLHOST');
+    const railwayPort = parseInt(configService.get<string>('MYSQLPORT') || '3306');
+    const railwayUser = configService.get<string>('MYSQLUSER');
+    const railwayPassword = configService.get<string>('MYSQLPASSWORD'); // MYSQLPASSWORD
+    const railwayRootPassword = configService.get<string>('MYSQL_ROOT_PASSWORD'); // MYSQL_ROOT_PASSWORD (ada underscore)
+    const railwayDatabase = configService.get<string>('MYSQLDATABASE');
+    const mysqlUrl = configService.get<string>('MYSQL_URL'); // URL internal Railway
+    const mysqlPublicUrl = configService.get<string>('MYSQL_PUBLIC_URL'); // URL eksternal Railway
 
-    // Fallback ke DATABASE_* variables jika MYSQL* tidak ada (untuk compatibility)
-    const fallbackUrl = configService.get<string>('DATABASE_URL');
-    const fallbackHost = configService.get<string>('DATABASE_HOST');
-    const fallbackPort = parseInt(configService.get<string>('DATABASE_PORT') || '3306');
-    const fallbackUsername = configService.get<string>('DATABASE_USERNAME');
-    const fallbackPassword = configService.get<string>('DATABASE_PASSWORD');
-    const fallbackDatabase = configService.get<string>('DATABASE_NAME');
+    // Fallback ke DATABASE_* variables (untuk lokal .env)
+    const localHost = configService.get<string>('DATABASE_HOST');
+    const localPort = parseInt(configService.get<string>('DATABASE_PORT') || '3306');
+    const localUsername = configService.get<string>('DATABASE_USERNAME');
+    const localPassword = configService.get<string>('DATABASE_PASSWORD');
+    const localDatabase = configService.get<string>('DATABASE_NAME');
 
-    // Debug logging - untuk memastikan variabel terdeteksi
-    console.log('=== DATABASE CONNECTION DEBUG ===');
+    // Debug logging
+    console.log('=== TypeORM Config Debug ===');
     console.log('NODE_ENV:', nodeEnv);
-    console.log('Railway MySQL Variables:');
-    console.log('MYSQL_URL:', mysqlUrl ? '✓ Found' : '✗ Missing');
-    console.log('MYSQL_PUBLIC_URL:', mysqlPublicUrl ? '✓ Found' : '✗ Missing');
-    console.log('MYSQLHOST:', host || 'Missing');
-    console.log('MYSQLPORT:', port);
-    console.log('MYSQLUSER:', username || 'Missing');
-    console.log('MYSQLPASSWORD:', password ? '✓ Found' : '✗ Missing');
-    console.log('MYSQLDATABASE:', database || 'Missing');
-    console.log('---');
-    console.log('Fallback DATABASE Variables (if Railway vars not found):');
-    console.log('DATABASE_URL:', fallbackUrl ? '✓ Found' : '✗ Missing');
-    console.log('DATABASE_HOST:', fallbackHost || 'Missing');
-    console.log('================================');
+    console.log('Railway Vars:', { railwayHost, railwayPort, railwayUser, hasRailwayPassword: !!railwayPassword, hasRailwayRootPassword: !!railwayRootPassword, railwayDatabase, mysqlUrl: !!mysqlUrl, mysqlPublicUrl: !!mysqlPublicUrl });
+    console.log('Local Vars:', { localHost, localPort, localUsername, hasLocalPassword: !!localPassword, localDatabase });
+    console.log('============================');
 
-    // Tunggu sebentar di production untuk memastikan database siap
-    // Ini adalah heuristik. Pertimbangkan menggunakan mekanisme 'health check' yang lebih robust
-    // atau 'startup probes' di lingkungan containerized (misal: Kubernetes)
+    // Tunggu sebentar di production untuk memastikan database siap (heuristik)
     if (nodeEnv === 'production') {
       console.log('Production mode detected. Waiting 8 seconds for MySQL service to become ready...');
       await new Promise(resolve => setTimeout(resolve, 8000));
     }
 
-    // Prioritas: MYSQL_PUBLIC_URL (external) > MYSQL_URL (internal) > DATABASE_URL > individual variables
-    const connectionUrl = mysqlPublicUrl || mysqlUrl || fallbackUrl;
-    const finalHost = host || fallbackHost;
-    const finalPort = port || fallbackPort;
-    const finalUsername = username || fallbackUsername;
-    const finalPassword = password || fallbackPassword;
-    const finalDatabase = database || fallbackDatabase;
+    let finalHost: string;
+    let finalPort: number;
+    let finalUsername: string;
+    let finalPassword: string;
+    let finalDatabase: string;
+    let useUrlConnection: boolean = false;
+    let finalUrl: string | undefined;
 
-    // Validasi bahwa semua variabel yang diperlukan ada
-    if (!connectionUrl && (!finalHost || !finalUsername || !finalDatabase)) {
+    // --- PRIORITAS PENGAMBILAN KONEKSI ---
+
+    // 1. Prioritaskan variabel individu dari Railway (tanpa underscore)
+    if (railwayHost && !isNaN(railwayPort) && railwayUser && (railwayPassword || railwayRootPassword) && railwayDatabase) {
+      console.log('Using individual Railway environment variables.');
+      finalHost = railwayHost;
+      finalPort = railwayPort;
+      finalUsername = railwayUser;
+      finalPassword = railwayPassword || railwayRootPassword || ''; // Prioritaskan MYSQLPASSWORD, fallback ke ROOT_PASSWORD
+      finalDatabase = railwayDatabase;
+    } 
+    // 2. Fallback ke MYSQL_URL atau MYSQL_PUBLIC_URL (jika Railway URL lengkap ada)
+    else if (mysqlPublicUrl || mysqlUrl) {
+      finalUrl = mysqlPublicUrl || mysqlUrl; // Prioritaskan public URL jika ada
+      useUrlConnection = true;
+      console.log(`Using database connection URL: ${finalUrl}`);
+      try {
+        const parsedUrl = new URL(finalUrl);
+        finalHost = parsedUrl.hostname;
+        finalPort = parseInt(parsedUrl.port) || 3306;
+        finalUsername = parsedUrl.username;
+        finalPassword = parsedUrl.password;
+        finalDatabase = parsedUrl.pathname.substring(1); // Ambil nama DB dari path URL
+      } catch (e) {
+        console.error('Error parsing Railway URL. Falling back to local variables.', e);
+        // Fallback jika parsing URL gagal
+        finalHost = localHost || 'localhost';
+        finalPort = localPort;
+        finalUsername = localUsername || 'root';
+        finalPassword = localPassword || '';
+        finalDatabase = localDatabase || '';
+        useUrlConnection = false; // Batalkan penggunaan URL jika parsing gagal
+      }
+    }
+    // 3. Terakhir, fallback ke variabel lokal dari .env
+    else {
+      console.log('Using local environment variables.');
+      finalHost = localHost || 'localhost';
+      finalPort = localPort;
+      finalUsername = localUsername || 'root';
+      finalPassword = localPassword || '';
+      finalDatabase = localDatabase || '';
+    }
+
+    // Validasi akhir
+    if (!finalHost || isNaN(finalPort) || !finalUsername || finalPassword === undefined || !finalDatabase) {
       const missing: string[] = [];
-      if (!connectionUrl) missing.push('MYSQL_URL/DATABASE_URL');
-      if (!finalHost) missing.push('MYSQLHOST/DATABASE_HOST');
-      if (!finalUsername) missing.push('MYSQLUSER/DATABASE_USERNAME');
-      if (!finalDatabase) missing.push('MYSQLDATABASE/DATABASE_NAME');
+      if (!finalHost) missing.push('Host');
+      if (isNaN(finalPort)) missing.push('Port');
+      if (!finalUsername) missing.push('Username');
+      if (finalPassword === undefined) missing.push('Password');
+      if (!finalDatabase) missing.push('Database Name');
 
-      console.error('Missing required environment variables for database connection:', missing.join(', '));
-      throw new Error(`Missing required database configuration: ${missing.join(', ')}. Please check your .env file or Railway environment variables.`);
+      console.error('CRITICAL ERROR: Missing required environment variables for database connection:', missing.join(', '));
+      throw new Error(`CRITICAL: Missing required database configuration: ${missing.join(', ')}. Check your .env file or Railway variables.`);
     }
 
     // Konfigurasi dasar TypeORM
     const baseConfig: any = {
-      type: 'mysql' as const,
-      entities: [
-        // Menggunakan glob pattern untuk menemukan semua entitas secara otomatis.
-        // Asumsi struktur folder entitas adalah src/*/entities/*.entity.ts
-        join(__dirname, '..', '**', '*.entity.{ts,js}'),
-        // Jika Anda ingin mengimpor secara manual untuk kontrol lebih,
-        // hapus baris di atas dan gunakan array seperti ini:
-        // User,
-        // MoodEntry,
-        // UserProfile,
-        // Habit,
-        // ... (semua entitas lainnya)
-      ],
+      type: 'mysql',
       
-      // AUTO SYNC HANYA UNTUK DEVELOPMENT!
-      // Gunakan migrasi untuk produksi (synchronize: false)
+      // Entitas: Menggunakan glob pattern yang lebih aman.
+      // Jika ormconfig.ts ada di src/config, maka '..' naik satu level ke src/,
+      // lalu cari di semua subfolder entitas.
+      entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
+      
+      // Migrasi: Sesuaikan path ini jika berbeda
+      // Contoh: src/database/migrations
+      migrations: [join(__dirname, '..', 'database', 'migrations', '**', '*.{ts,js}')], 
+      
       synchronize: nodeEnv !== 'production', // true di dev, false di production
       autoLoadEntities: true, // TypeORM akan memuat entitas secara otomatis
-      logging: nodeEnv === 'development' ? ['query', 'error', 'schema'] : ['error'], // 'schema' juga berguna di dev
+      logging: nodeEnv === 'development' ? ['query', 'error', 'schema'] : ['error'],
 
-      // Timeout settings yang cocok untuk lingkungan cloud seperti Railway
-      connectTimeout: 20000, // 20 detik untuk koneksi awal
-      acquireTimeout: 20000, // 20 detik untuk mendapatkan koneksi dari pool
-      timeout: 20000, // 20 detik untuk operasi query
-      retryAttempts: 6, // Lebih banyak percobaan ulang jika koneksi gagal
-      retryDelay: 3000, // 3 detik antara setiap percobaan
+      connectTimeout: 20000,
+      acquireTimeout: 20000,
+      timeout: 20000,
+      retryAttempts: 6,
+      retryDelay: 3000,
 
-      // Connection pool settings
       extra: {
-        connectionLimit: 8, // Jumlah maksimum koneksi di pool (sesuaikan dengan kebutuhan dan kapasitas DB)
-        idleTimeout: 600000, // 10 menit idle sebelum koneksi ditutup
-        timezone: 'Z', // Gunakan 'Z' atau '+00:00' untuk UTC, pastikan konsisten
-        
-        // SSL settings untuk Railway (penting untuk production)
-        ssl: nodeEnv === 'production' ? {
-          rejectUnauthorized: false // Diperlukan untuk Railway, mereka menggunakan self-signed certs
-        } : undefined,
-        
-        // MySQL connection flags yang aman
-        flags: [
-          'PROTOCOL_41',
-          'TRANSACTIONS',
-          'SECURE_CONNECTION',
-          'MULTI_STATEMENTS'
-        ],
-        
-        // Railway-specific optimizations & character set
+        connectionLimit: 8,
+        idleTimeout: 600000,
+        timezone: 'Z',
+        ssl: nodeEnv === 'production' ? { rejectUnauthorized: false } : undefined, // Railway menggunakan self-signed
+        flags: ['PROTOCOL_41', 'TRANSACTIONS', 'SECURE_CONNECTION', 'MULTI_STATEMENTS'],
         charset: 'utf8mb4',
         supportBigNumbers: true,
         bigNumberStrings: true,
       },
     };
 
-    // Jika connection string tersedia, gunakan itu.
-    if (connectionUrl) {
-      console.log(`Using database connection string from: ${mysqlPublicUrl ? 'MYSQL_PUBLIC_URL' : (mysqlUrl ? 'MYSQL_URL' : 'DATABASE_URL')}`);
+    // Return konfigurasi TypeORM
+    if (useUrlConnection && finalUrl) {
       return {
         ...baseConfig,
-        url: connectionUrl,
+        url: finalUrl,
+      };
+    } else {
+      return {
+        ...baseConfig,
+        host: finalHost,
+        port: finalPort,
+        username: finalUsername,
+        password: finalPassword,
+        database: finalDatabase,
       };
     }
-
-    // Fallback ke individual environment variables
-    console.log('Using individual environment variables for database connection.');
-    console.log('Final connection details (individual vars):', {
-      host: finalHost,
-      port: finalPort,
-      username: finalUsername,
-      database: finalDatabase,
-      hasPassword: !!finalPassword, // Hanya untuk debug, jangan log password sebenarnya
-    });
-    
-    return {
-      ...baseConfig,
-      host: finalHost,
-      port: finalPort,
-      username: finalUsername,
-      password: finalPassword || '', // Pastikan password tidak undefined
-      database: finalDatabase,
-    };
   },
 };
