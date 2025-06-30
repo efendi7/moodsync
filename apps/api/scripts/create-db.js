@@ -1,31 +1,59 @@
-// apps/api/scripts/create-db.js (atau apps/api/create-db.js, sesuaikan lokasinya)
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Pastikan ini memuat .env dengan benar berdasarkan lokasi skrip.
-// Jika script di apps/api/scripts/, maka '../.env' untuk menunjuk ke apps/api/.env
-// Jika script di apps/api/, maka './.env'
-dotenv.config({ path: path.resolve(__dirname, '../.env') }); // Contoh jika script di 'scripts' subfolder
+dotenv.config({ path: path.resolve(__dirname, '../.env') }); 
 
 async function createDatabase() {
-    // --- PERUBAHAN DI SINI: Paksa penggunaan DATABASE_NAME dari .env ---
-      const dbName = process.env.MYSQLDATABASE || process.env.DATABASE_NAME; 
+    // Prioritaskan variabel Railway (tanpa UNDERSCORE) jika ada, lalu fallback ke lokal
+    const dbName = process.env.MYSQLDATABASE || process.env.DATABASE_NAME; 
 
     if (!dbName) {
-        console.error("Error: DATABASE_NAME is not set in your .env file or not loaded. Please set it (e.g., DATABASE_NAME=moodsync).");
-        process.exit(1); // Keluar jika variabel tidak ada
+        console.error("Error: DATABASE_NAME (or MYSQLDATABASE) is not set. Please configure your environment variables.");
+        process.exit(1);
     }
-    // --- AKHIR PERUBAHAN ---
 
-   const host = process.env.MYSQLHOST || process.env.DATABASE_HOST || 'localhost';
-    const port = parseInt(process.env.MYSQLPORT || process.env.DATABASE_PORT || '3306');
-    const user = process.env.MYSQLUSER || process.env.DATABASE_USERNAME || 'root';
-    const password = process.env.MYSQLPASSWORD || process.env.DATABASE_PASSWORD || '';
+    let host, port, user, password;
+
+    // PERBAIKAN DI SINI: Gunakan variabel TANPA UNDERSCORE
+    if (process.env.MYSQLHOST && process.env.MYSQLPORT && process.env.MYSQLUSER && process.env.MYSQLPASSWORD) {
+        host = process.env.MYSQLHOST; 
+        port = parseInt(process.env.MYSQLPORT);
+        user = process.env.MYSQLUSER;
+        password = process.env.MYSQLPASSWORD;
+    } else if (process.env.MYSQL_URL) {
+        // Fallback ke parsing MYSQL_URL jika variabel terpisah tidak ada
+        try {
+            const url = new URL(process.env.MYSQL_URL);
+            host = url.hostname;
+            port = parseInt(url.port) || 3306;
+            user = url.username;
+            password = url.password;
+        } catch (e) {
+            console.error("Error parsing MYSQL_URL:", e.message);
+            process.exit(1);
+        }
+    } else {
+        // Fallback ke variabel .env lokal jika tidak ada variabel Railway
+        host = process.env.DATABASE_HOST || 'localhost';
+        port = parseInt(process.env.DATABASE_PORT || '3306');
+        user = process.env.DATABASE_USERNAME || 'root';
+        password = process.env.DATABASE_PASSWORD || '';
+    }
+
+    if (!host || isNaN(port) || !user || password === undefined) { 
+        console.error("Error: Database connection details (host, port, user, password) are incomplete.");
+        console.error(`dbName: ${dbName}`);
+        console.error(`host: ${host}`);
+        console.error(`port: ${port} (type: ${typeof port}, isNaN: ${isNaN(port)})`);
+        console.error(`user: ${user}`);
+        console.error(`password provided: ${password !== undefined}`);
+        process.exit(1);
+    }
 
     let connection;
     try {
-        console.log(`Attempting to connect to MySQL server at ${host}:${port}...`);
+        console.log(`Attempting to connect to MySQL server at ${host}:${port} for database ${dbName}...`);
         connection = await mysql.createConnection({
             host: host,
             port: port,
@@ -42,7 +70,13 @@ async function createDatabase() {
 
     } catch (error) {
         console.error('Error creating database:', error.message);
-        if (connection) { try { await connection.end(); } catch (closeError) { console.error('Error closing connection:', closeError.message); } }
+        if (connection) { 
+            try { 
+                await connection.end(); 
+            } catch (closeError) { 
+                console.error('Error closing connection:', closeError.message); 
+            } 
+        }
         process.exit(1);
     }
 }
