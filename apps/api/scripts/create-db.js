@@ -18,9 +18,9 @@ async function createDatabase() {
     }
     // --- AKHIR PERUBAHAN ---
 
-   const host = process.env.MYSQL_HOST || process.env.DATABASE_HOST || 'localhost';
-    const port = parseInt(process.env.MYSQL_PORT || process.env.DATABASE_PORT || '3306');
-    const user = process.env.MYSQL_USER || process.env.DATABASE_USERNAME || 'root';
+   const host = process.env.MYSQLHOST || process.env.DATABASE_HOST || 'localhost';
+    const port = parseInt(process.env.MYSQLPORT || process.env.DATABASE_PORT || '3306');
+    const user = process.env.MYSQLUSER || process.env.DATABASE_USERNAME || 'root';
     const password = process.env.MYSQLPASSWORD || process.env.DATABASE_PASSWORD || '';
 
     let connection;
