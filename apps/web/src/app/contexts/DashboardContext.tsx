@@ -1,4 +1,6 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+// src/app/contexts/DashboardContext.tsx
+import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import type {
   User,
@@ -6,10 +8,9 @@ import type {
   QuickAction,
   RecentMood,
   Habit,
-} from '../../hooks/useDashboardData';
+} from '../../types';
 
 interface DashboardContextType {
-  // Data from useDashboardData
   user: User;
   todayProgress: number;
   insights: Insight[];
@@ -17,8 +18,7 @@ interface DashboardContextType {
   recentMoods: RecentMood[];
   habits: Habit[];
   isLoading: boolean;
-
-  // Additional context methods
+  logout: () => Promise<void>;
   refreshData: () => void;
 }
 
@@ -29,18 +29,69 @@ const DashboardContext = createContext<DashboardContextType | undefined>(
 export const DashboardProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  // Use the dashboard data hook
-  const dashboardData = useDashboardData();
+  const { user: authUser, isLoading: authLoading, logout: authLogout, error: authError } = useAuth();
+  const mockData = useDashboardData();
+  
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  useEffect(() => {
+    // Debug logs
+    console.group('🔍 DashboardContext State');
+    console.log('authLoading:', authLoading);
+    console.log('authUser:', authUser);
+    console.log('authError:', authError);
+    console.log('Using real data:', !!authUser);
+    console.log('Using mock data:', !authUser);
+    console.groupEnd();
+
+    // Set loading false when auth is done
+    if (!authLoading) {
+      setIsDataLoading(false);
+    }
+  }, [authLoading, authUser, authError]);
 
   const refreshData = () => {
-    // Implement data refresh logic
-    console.log('Refreshing dashboard data...');
-    // In a real app, you might trigger a re-fetch here
-    window.location.reload(); // Simple refresh - replace with better logic
+    console.log('🔄 Refreshing dashboard data...');
+    window.location.reload();
   };
 
+  const logout = async () => {
+    console.log('🚪 Logging out...');
+    await authLogout();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
+  };
+
+  // CRITICAL: Check if we have real user data
+  // If authUser is null but not loading, redirect to login
+  useEffect(() => {
+    if (!authLoading && !authUser && !authError) {
+      console.warn('⚠️ No user data and not loading - should redirect to login');
+      // Uncomment to enable auto-redirect:
+      // window.location.href = '/auth/login';
+    }
+  }, [authLoading, authUser, authError]);
+
+  // Use real user data if available, otherwise use mock (but log warning)
+  let user: User;
+  if (authUser) {
+    console.log('✅ Using REAL user data from backend');
+    user = authUser;
+  } else {
+    console.warn('⚠️ Using MOCK user data - authUser is null');
+    user = mockData.user;
+  }
+  
   const value = {
-    ...dashboardData, // Spread all dashboard data
+    user,
+    todayProgress: mockData.todayProgress,
+    insights: mockData.insights,
+    quickActions: mockData.quickActions,
+    recentMoods: mockData.recentMoods,
+    habits: mockData.habits,
+    isLoading: authLoading || isDataLoading,
+    logout,
     refreshData,
   };
 

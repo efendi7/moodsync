@@ -1,55 +1,73 @@
-// src/context/ThemeContext.tsx
+// src/app/contexts/ThemeContext.tsx
+
 'use client';
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 
+// Tentukan tipe untuk data konteks
 interface ThemeContextType {
   isDarkMode: boolean;
   toggleTheme: () => void;
+  // Tambahkan state untuk memastikan tidak ada hydration error
+  hasMounted: boolean; 
 }
 
+// Buat konteks dengan nilai default
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Buat komponen Provider
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      // Perbaikan kecil: Tambahkan blok try-catch untuk penanganan error parsing yang lebih robust
-      if (savedTheme !== null) {
-        try {
-          // Hanya mencoba parse jika ada nilai, dan pastikan itu boolean
-          const parsedTheme = JSON.parse(savedTheme);
-          if (typeof parsedTheme === 'boolean') {
-            return parsedTheme;
-          }
-        } catch (e) {
-          console.error("Failed to parse theme from localStorage, falling back to default.", e);
-          // Fallback jika parsing gagal (misalnya, "dark" bukan JSON valid)
-        }
-      }
-      return true; // Default dark mode jika tidak ada tema tersimpan atau parsing gagal
-    }
-    return true; // Default dark mode untuk SSR
-  });
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [hasMounted, setHasMounted] = useState<boolean>(false);
 
+  // Efek ini hanya berjalan sekali di sisi klien setelah render awal
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', JSON.stringify(isDarkMode));
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Tentukan tema awal berdasarkan penyimpanan atau preferensi sistem
+    // Default ke false (light mode) jika tidak ada yang diset
+    const initialTheme = savedTheme !== null ? savedTheme === 'true' : prefersDark;
+
+    setIsDarkMode(initialTheme);
+    if (initialTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  }, [isDarkMode]);
+
+    // Tandai bahwa komponen sudah terpasang di klien
+    setHasMounted(true);
+  }, []); // Array dependensi kosong memastikan ini hanya berjalan sekali
 
   const toggleTheme = () => {
-    setIsDarkMode(prevMode => !prevMode);
+    // Hanya izinkan pengubahan tema setelah komponen terpasang
+    if (!hasMounted) return;
+
+    setIsDarkMode(prevMode => {
+      const newMode = !prevMode;
+      localStorage.setItem('theme', String(newMode));
+      if (newMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return newMode;
+    });
   };
 
+  // Nilai yang akan diberikan ke provider
+  const value = { isDarkMode, toggleTheme, hasMounted };
+
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
+// Hook kustom untuk menggunakan ThemeContext
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');

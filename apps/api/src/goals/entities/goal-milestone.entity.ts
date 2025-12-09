@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm';
 import { Goal } from './goal.entity';
 
 @Entity('goal_milestones')
@@ -6,25 +12,24 @@ export class GoalMilestone {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  goal_id: string;
+  @Column({ name: 'goal_id', type: 'varchar', length: 255 })
+  goalId: string;
 
-  @ManyToOne(() => Goal, goal => goal.milestones)
-  @JoinColumn({ name: 'goal_id' })
-  goal: Goal;
-
-  @Column({ length: 255 })
+  @Column({ type: 'varchar', length: 255 })
   title: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'target_value' })
-  target_value: number;
+  @Column({ name: 'target_value', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  targetValue: number;
 
-  @Column({ type: 'timestamp', nullable: true, name: 'completed_at' })
-  completed_at: Date;
+  @Column({ name: 'completed_at', type: 'timestamp', nullable: true })
+  completedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
+  createdAt: Date;
+
+  @ManyToOne(() => Goal, (goal) => goal.milestones)
+  goal: Goal;
 }

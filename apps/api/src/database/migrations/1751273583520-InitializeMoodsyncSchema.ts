@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitialMoodSyncSchema1751268978626 implements MigrationInterface {
-    name = 'InitialMoodSyncSchema1751268978626'
+export class InitializeMoodsyncSchema1751273583520 implements MigrationInterface {
+    name = 'InitializeMoodsyncSchema1751273583520'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE \`mood_entries\` (\`id\` varchar(36) NOT NULL, \`user_id\` varchar(255) NOT NULL, \`mood_score\` tinyint NOT NULL, \`energy_level\` tinyint NULL, \`anxiety_level\` tinyint NULL, \`stress_level\` tinyint NULL, \`happiness_level\` tinyint NULL, \`mood_emotions\` json NULL, \`mood_intensity\` tinyint NULL, \`context_tags\` json NULL, \`location\` varchar(255) NULL, \`weather_condition\` varchar(50) NULL, \`notes\` text NULL, \`photo_url\` varchar(255) NULL, \`voice_note_url\` varchar(255) NULL, \`recorded_at\` timestamp NOT NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);

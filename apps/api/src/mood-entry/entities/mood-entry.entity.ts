@@ -1,60 +1,67 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('mood_entries')
+@Index(['userId', 'recordedAt'])
 export class MoodEntry {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  user_id: string;
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
+  userId: string;
 
-  @ManyToOne(() => User, user => user.moodEntries)
-  @JoinColumn({ name: 'user_id' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column({ type: 'tinyint' })
-  mood_score: number; // 1-10
+  @Column({ name: 'mood_score', type: 'tinyint' })
+  moodScore: number;
 
-  @Column({ type: 'tinyint', nullable: true })
-  energy_level: number; // 1-10
+  @Column({ name: 'energy_level', type: 'tinyint', nullable: true })
+  energyLevel: number;
 
-  @Column({ type: 'tinyint', nullable: true })
-  anxiety_level: number; // 1-10
+  @Column({ name: 'anxiety_level', type: 'tinyint', nullable: true })
+  anxietyLevel: number;
 
-  @Column({ type: 'tinyint', nullable: true })
-  stress_level: number; // 1-10
+  @Column({ name: 'stress_level', type: 'tinyint', nullable: true })
+  stressLevel: number;
 
-  @Column({ type: 'tinyint', nullable: true })
-  happiness_level: number; // 1-10
+  @Column({ name: 'happiness_level', type: 'tinyint', nullable: true })
+  happinessLevel: number;
 
-  @Column({ type: 'json', nullable: true })
-  mood_emotions: string[]; // array of emotions
+  @Column({ name: 'mood_emotions', type: 'json', nullable: true })
+  moodEmotions: string[];
 
-  @Column({ type: 'tinyint', nullable: true })
-  mood_intensity: number; // 1-5
+  @Column({ name: 'mood_intensity', type: 'tinyint', nullable: true })
+  moodIntensity: number;
 
-  @Column({ type: 'json', nullable: true })
-  context_tags: string[];
+  @Column({ name: 'context_tags', type: 'json', nullable: true })
+  contextTags: string[];
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   location: string;
 
-  @Column({ length: 50, nullable: true, name: 'weather_condition' })
-  weather_condition: string;
+  @Column({ name: 'weather_condition', type: 'varchar', length: 50, nullable: true })
+  weatherCondition: string;
 
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ length: 255, nullable: true, name: 'photo_url' })
-  photo_url: string;
+  @Column({ name: 'photo_url', type: 'varchar', length: 255, nullable: true })
+  photoUrl: string;
 
-  @Column({ length: 255, nullable: true, name: 'voice_note_url' })
-  voice_note_url: string;
+  @Column({ name: 'voice_note_url', type: 'varchar', length: 255, nullable: true })
+  voiceNoteUrl: string;
 
-  @Column({ type: 'timestamp', name: 'recorded_at' })
-  recorded_at: Date; // Kapan mood ini dicatat
+  @Column({ name: 'recorded_at', type: 'timestamp' })
+  recordedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
+  createdAt: Date;
 }

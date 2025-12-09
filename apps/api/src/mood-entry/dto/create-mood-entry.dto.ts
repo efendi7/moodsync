@@ -1,96 +1,130 @@
-// src/mood-entry/dto/create-mood-entry.dto.ts
 import {
-  IsInt,
+  IsNotEmpty,
+  IsNumber,
   IsString,
-  IsOptional,
   IsArray,
-  IsDateString,
+  IsOptional,
   Min,
   Max,
-  IsNumber,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMoodEntryDto {
-  @ApiProperty({ example: 7, description: 'Skor mood (1-10)' })
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  mood_score: number; // Sesuai dengan MoodEntry entity
-
-  @ApiPropertyOptional({ example: 8, description: 'Level energi (1-10)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  energy_level?: number;
-
-  @ApiPropertyOptional({ example: 3, description: 'Level kecemasan (1-10)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  anxiety_level?: number;
-
-  @ApiPropertyOptional({ example: 4, description: 'Level stres (1-10)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  stress_level?: number;
-
-  @ApiPropertyOptional({ example: 9, description: 'Level kebahagiaan (1-10)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  happiness_level?: number;
-
-  @ApiPropertyOptional({ example: ['happy', 'calm'], description: 'Emosi terkait mood (array string)' })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  mood_emotions?: string[];
-
-  @ApiPropertyOptional({ example: 3, description: 'Intensitas mood (1-5)' })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  mood_intensity?: number;
-
-  @ApiPropertyOptional({ example: ['work', 'meeting'], description: 'Tag konteks (array string)' })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  context_tags?: string[];
-
-  @ApiPropertyOptional({ example: 'Jakarta, Indonesia', description: 'Lokasi mood dicatat' })
-  @IsOptional()
+  @ApiProperty({
+    description: 'Mood type (e.g., happy, sad, anxious)',
+    example: 'happy',
+  })
   @IsString()
+  @IsNotEmpty()
+  mood: string;
+
+  @ApiProperty({
+    description: 'Intensity level of the mood (1-10)',
+    example: 7,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  intensity: number;
+
+  @ApiPropertyOptional({
+    description: 'Energy level (1-10)',
+    example: 6,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  @IsOptional()
+  energy?: number;
+
+  @ApiPropertyOptional({
+    description: 'Stress level (1-10)',
+    example: 4,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  @IsOptional()
+  stress?: number;
+
+  @ApiPropertyOptional({
+    description: 'Anxiety level (1-10)',
+    example: 3,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  @IsOptional()
+  anxiety?: number;
+
+  @ApiPropertyOptional({
+    description: 'Happiness level (1-10)',
+    example: 8,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(10)
+  @IsOptional()
+  happiness?: number;
+
+  @ApiPropertyOptional({
+    description: 'List of emotions felt',
+    example: ['excited', 'grateful'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  emotions?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Optional note about the mood',
+    example: 'Had a great day at work!',
+  })
+  @IsString()
+  @IsOptional()
+  note?: string;
+
+  @ApiPropertyOptional({
+    description: 'Context tags for the entry',
+    example: ['work', 'exercise'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tags?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Location where mood was recorded',
+    example: 'Office',
+  })
+  @IsString()
+  @IsOptional()
   location?: string;
 
-  @ApiPropertyOptional({ example: 'sunny', description: 'Kondisi cuaca' })
-  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Weather condition at the time',
+    example: 'sunny',
+  })
   @IsString()
-  weather_condition?: string;
-
-  @ApiPropertyOptional({ example: 'Hari ini terasa produktif.', description: 'Catatan tambahan' })
   @IsOptional()
-  @IsString()
-  notes?: string;
+  weatherCondition?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/mood-photo.jpg', description: 'URL foto mood' })
-  @IsOptional()
-  @IsString()
-  photo_url?: string;
-
-  @ApiPropertyOptional({ example: 'https://example.com/voice-note.mp3', description: 'URL voice note' })
-  @IsOptional()
-  @IsString()
-  voice_note_url?: string;
-
-  @ApiProperty({ example: '2023-01-01T14:30:00Z', description: 'Timestamp mood dicatat (ISO 8601)' })
+  @ApiPropertyOptional({
+    description: 'Timestamp when mood was recorded',
+    example: '2024-12-01T10:30:00Z',
+  })
   @IsDateString()
-  loggedAt: string; // Akan dipetakan ke recorded_at di entity
+  @IsOptional()
+  recordedAt?: string;
 }

@@ -1,24 +1,23 @@
-import { useState, useCallback } from 'react';
+// src/app/hooks/useSidebar.ts
+'use client';
 
-export const useSidebar = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+import { create } from 'zustand';
 
-  const toggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed(prev => !prev);
-  }, []);
+interface SidebarState {
+  isCollapsed: boolean;   // untuk desktop (icon only)
+  isOpen: boolean;        // untuk mobile (drawer terbuka/tutup)
+  toggleCollapsed: () => void;
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+}
 
-  const collapseSidebar = useCallback(() => {
-    setIsSidebarCollapsed(true);
-  }, []);
+export const useSidebar = create<SidebarState>((set) => ({
+  isCollapsed: false,
+  isOpen: false,
 
-  const expandSidebar = useCallback(() => {
-    setIsSidebarCollapsed(false);
-  }, []);
-
-  return {
-    isSidebarCollapsed,
-    toggleSidebar,
-    collapseSidebar,
-    expandSidebar,
-  };
-};
+  toggleCollapsed: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
+  open: () => set({ isOpen: true }),
+  close: () => set({ isOpen: false }),
+  toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+}));

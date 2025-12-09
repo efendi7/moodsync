@@ -18,14 +18,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    
-
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d ormconfig.ts",
-    "migration:create": "npm run typeorm migration:create",
+    "migration:create": "pnpm typeorm migration:create",
     "migration:generate": "node scripts/create-db.js && npm run typeorm migration:generate",
     "migration:run": "node scripts/create-db.js && npm run typeorm migration:run",
     "migration:revert": "npm run typeorm migration:revert"
-    
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -72,7 +69,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
-    "supertest": "^7.0.0",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",

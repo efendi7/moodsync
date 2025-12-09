@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Habit } from './habit.entity';
 import { User } from '../../users/entities/user.entity';
 
@@ -7,38 +14,38 @@ export class HabitLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  habit_id: string;
+  @Column({ name: 'habit_id', type: 'varchar', length: 255 })
+  habitId: string;
 
-  @ManyToOne(() => Habit, habit => habit.habitLogs)
-  @JoinColumn({ name: 'habit_id' })
-  habit: Habit;
-
-  @Column({ type: 'uuid' })
-  user_id: string; // Redundansi untuk kemudahan query, atau jika habit bisa dibagikan
-
-  @ManyToOne(() => User, user => user.habitLogs) // Relasi ke User
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
+  userId: string;
 
   @Column({ type: 'date' })
-  date: Date;
+  date: string;
 
-  @Column({ type: 'boolean' })
+  @Column({ type: 'tinyint' })
   completed: boolean;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'value_achieved' })
-  value_achieved: number;
+  @Column({ name: 'value_achieved', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valueAchieved: number;
 
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ type: 'tinyint', nullable: true, name: 'mood_before' })
-  mood_before: number; // 1-10
+  @Column({ name: 'mood_before', type: 'tinyint', nullable: true })
+  moodBefore: number;
 
-  @Column({ type: 'tinyint', nullable: true, name: 'mood_after' })
-  mood_after: number; // 1-10
+  @Column({ name: 'mood_after', type: 'tinyint', nullable: true })
+  moodAfter: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
+  createdAt: Date;
+
+  @ManyToOne(() => Habit, (habit) => habit.logs)
+  @JoinColumn({ name: 'habit_id' })
+  habit: Habit;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 }

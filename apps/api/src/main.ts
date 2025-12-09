@@ -1,141 +1,185 @@
+// apps/api/src/main.ts
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
-import { UsersService } from './users/users.service';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import * as bcrypt from 'bcrypt';
 
-// === Swagger Import ===
+// === Swagger ===
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
-// === Import DTO dan Enums yang diperlukan untuk seeding ===
-import { CreateUserDto } from './users/dto/create-user.dto';
-import { UserRole, SubscriptionPlan } from './users/entities/user.entity'; // Pastikan UserRole dan SubscriptionPlan diimpor
+// === App Module & Services ===
+import { AppModule } from './app.module';
+import { UsersService } from './users/users.service';
 
+// === DTO & Enums untuk seeding ===
+import { CreateUserDto } from './users/dto/create-user.dto';
+import { UserRole, SubscriptionPlan } from './users/entities/user.entity';
+
+// === GLOBAL EXCEPTION FILTER (TANGKAP SEMUA ERROR) ===
+import {
+  Catch,
+  ArgumentsHost,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<any>();
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message =
+      exception instanceof HttpException
+        ? (exception.getResponse() as any)
+        : { message: 'Internal server error' };
+
+    response.status(status).json({
+      success: false,
+      message:
+        typeof message === 'string'
+          ? message
+          : message?.message || 'Terjadi kesalahan pada server',
+      ...(process.env.NODE_ENV === 'development' && {
+        error: exception instanceof Error ? exception.stack : String(exception),
+      }),
+    });
+  }
+}
+
+// FORCE SEMUA new Date() MENGGUNAKAN UTC (INI YANG BIKIN STATISTIK & STREAK SELALU BENAR!)
+process.env.TZ = 'UTC';
+console.log('Server timezone: UTC (forced)');
+
+// === BOOTSTRAP ===
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // === Global Validation Pipe ===
+  // Global Exception Filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      disableErrorMessages: process.env.NODE_ENV === 'production',
     }),
   );
 
-  // === CORS Configuration - Using Environment Variables ===
+  // ClassSerializerInterceptor (untuk @Exclude() di entity)
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // === CORS ===
   const allowedOrigins = [
     'http://localhost:3000',
-    'http://localhost:3001', // Additional local development port
-    process.env.CORS_ORIGIN, // From environment variable
-    'https://moodsync-web-production.up.railway.app', // Actual frontend URL
-    'https://moodsync-web.up.railway.app', // Backup URL
+    'http://localhost:3001',
+    'https://moodsync-web-production.up.railway.app',
+    'https://moodsync-web.up.railway.app',
+    process.env.CORS_ORIGIN,
     process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : null,
-  ].filter(Boolean); // Remove null values
+  ].filter(Boolean);
 
   app.enableCors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log('❌ CORS blocked origin:', origin);
+        console.warn('CORS blocked origin:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
-    allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
-      'Accept',
-      'Origin',
-      'X-Requested-With',
-      'Access-Control-Request-Method',
-      'Access-Control-Request-Headers'
-    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   });
 
-  console.log('✅ Allowed CORS origins:', allowedOrigins);
+  console.log('Allowed CORS origins:', allowedOrigins.filter(Boolean));
 
-  // === Global API Prefix ===
+  // === Global Prefix ===
   const apiPrefix = process.env.API_PREFIX || 'api/v1';
   app.setGlobalPrefix(apiPrefix);
 
-  // === Swagger Setup ===
+  // === Swagger Documentation ===
   const config = new DocumentBuilder()
     .setTitle('MoodSync API')
-    .setDescription('Dokumentasi REST API untuk MoodSync')
+    .setDescription('REST API untuk aplikasi MoodSync – Journal, Mood Tracking & Wellness')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
-  // === Optional: Dummy test user (only in development) ===
+  // === Dummy Test User (hanya di development) ===
   if (process.env.NODE_ENV !== 'production') {
     try {
-      const userService = app.get(UsersService);
-      const email = 'test@example.com';
-      const existingUser = await userService.findByEmail(email);
+      const usersService = app.get(UsersService);
+      const testEmail = 'test@example.com';
 
-      if (!existingUser) {
-        const hashedPassword = await bcrypt.hash('password', 10); // Hash password
-        
-        // --- PERBAIKAN DI SINI ---
-        const testUserDto: CreateUserDto = {
-          username: 'testuser', // <-- Gunakan username
-          full_name: 'Test User', // <-- Gunakan full_name
-          email: email,
-          password_hash: hashedPassword, // <-- Gunakan password_hash
-          // Tambahkan properti wajib lainnya jika ada di CreateUserDto dan belum ada nilai default
-          role: UserRole.PERSONAL, // <-- Contoh: Set role default
-          subscription_plan: SubscriptionPlan.FREE, // <-- Contoh: Set subscription_plan default
-          onboarding_completed: false, // Contoh: Set default
-          privacy_settings: {}, // Contoh: Set default
-          // created_at dan updated_at akan diisi otomatis oleh TypeORM
-        };
-        await userService.create(testUserDto); // Kirim objek DTO yang sesuai
-        console.log('✅ Test user created successfully');
+      const existing = await usersService.findByEmail(testEmail);
+      if (!existing) {
+        const hashed = await bcrypt.hash('password', 10);
+        await usersService.create({
+          username: 'testuser',
+          email: testEmail,
+          password_hash: hashed,
+          full_name: 'Test User',
+          role: UserRole.PERSONAL,
+          subscription_plan: SubscriptionPlan.FREE,
+          onboarding_completed: false,
+          privacy_settings: {},
+        } as CreateUserDto);
+        console.log('Test user created: test@example.com / password');
       } else {
-        console.log('ℹ️ Test user already exists');
+        console.log('Test user already exists');
       }
-    } catch (error) {
-      console.error('❌ Error creating test user:', error);
+    } catch (err) {
+      console.error('Failed to create test user:', err);
     }
   }
 
-  // === Railway specific configurations ===
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
-  
+  // === Health Check Endpoint ===
   app.getHttpAdapter().get('/health', (req, res) => {
-    res.status(200).json({ 
-      status: 'OK', 
+    res.status(200).json({
+      status: 'OK',
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
     });
   });
 
-  // === Start App ===
+  // === Trust Proxy (Railway, Render, dll) ===
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  // === Start Server ===
   const port = process.env.PORT || 5000;
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
-  
+
   await app.listen(port, host);
 
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? `https://${process.env.RAILWAY_STATIC_URL || 'your-app-name.up.railway.app'}`
-    : `http://localhost:${port}`;
+  const baseUrl =
+    process.env.NODE_ENV === 'production'
+      ? `https://${process.env.RAILWAY_STATIC_URL || 'your-domain.com'}`
+      : `http://localhost:${port}`;
 
-  console.log(`🚀 App running at: ${baseUrl}/${apiPrefix}`);
-  console.log(`📘 Swagger docs at: ${baseUrl}/docs`);
-  console.log(`💚 Health check at: ${baseUrl}/health`);
+  console.log('MoodSync API is running!');
+  console.log(`URL: ${baseUrl}/${apiPrefix}`);
+  console.log(`Docs: ${baseUrl}/docs`);
+  console.log(`Health: ${baseUrl}/health`);
 }
 
-bootstrap().catch((error) => {
-  console.error('❌ Failed to start application:', error);
+bootstrap().catch((err) => {
+  console.error('Application failed to start:', err);
   process.exit(1);
 });

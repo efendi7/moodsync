@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -10,23 +11,19 @@ import { AIInsights } from '../../components/dashboard/AIInsight';
 import { QuickActions } from '../../components/dashboard/QuickActions';
 import { RecentMoods } from '../../components/dashboard/RecentMoods';
 import { HabitsProgress } from '../../components/dashboard/HabitsProgress';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+
 import { useTheme } from '../hooks/useTheme';
 import { useSidebar } from '../hooks/useSidebar';
 import {
   DashboardProvider,
   useDashboardContext,
 } from '../contexts/DashboardContext';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-
-const DashboardLoader = () => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-    <LoadingSpinner />
-  </div>
-);
 
 const DashboardContent = () => {
-  const { isDarkMode, toggleTheme, isHydrated } = useTheme();
-  const { isSidebarCollapsed, toggleSidebar } = useSidebar();
+  // SEMUA HOOK HARUS DI ATAS — TIDAK BOLEH ADA RETURN/IF DI ATASNYA
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { isCollapsed, isOpen } = useSidebar();
 
   const {
     user,
@@ -37,24 +34,25 @@ const DashboardContent = () => {
     habits,
     isLoading,
     refreshData,
+    logout,
   } = useDashboardContext();
 
   const [currentMood, setCurrentMood] = useState<number | null>(null);
 
-  // Force theme consistency - always use the current isDarkMode value
-  const currentTheme = isDarkMode;
-
-  const themeClasses = useMemo(() => {
-    return currentTheme
-      ? 'min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white'
-      : 'min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900';
-  }, [currentTheme]);
-
-  const mainContentClasses = useMemo(
+  // Background sesuai tema
+  const themeClasses = useMemo(
     () =>
-      `transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`,
-    [isSidebarCollapsed],
+      isDarkMode
+        ? 'min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white'
+        : 'min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900',
+    [isDarkMode]
   );
+
+  // Margin kiri konten utama (mobile = 0, desktop = sesuai sidebar)
+  const mainContentMargin = useMemo(() => {
+    if (isOpen) return 'lg:ml-64';
+    return isCollapsed ? 'lg:ml-20' : 'lg:ml-64';
+  }, [isOpen, isCollapsed]);
 
   const handleMoodChange = useCallback((mood: number | null) => {
     setCurrentMood(mood);
@@ -64,13 +62,20 @@ const DashboardContent = () => {
     refreshData();
   }, [refreshData]);
 
-  // Only show loading for data, not hydration
+  const handleLogout = useCallback(async () => {
+    await logout();
+  }, [logout]);
+
+  // Loading harus di bawah semua hook
   if (isLoading) {
     return (
-      <div className={currentTheme 
-        ? "min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center"
-        : "min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center"
-      }>
+      <div
+        className={
+          isDarkMode
+            ? 'min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center'
+            : 'min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center'
+        }
+      >
         <LoadingSpinner />
       </div>
     );
@@ -78,47 +83,44 @@ const DashboardContent = () => {
 
   return (
     <div className={themeClasses}>
-      <Sidebar
-        isDarkMode={currentTheme}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={toggleSidebar}
-      />
+      {/* Sidebar – otomatis jadi drawer di mobile */}
+      <Sidebar isDarkMode={isDarkMode} />
 
-      <div className={mainContentClasses}>
-        <Header
-          user={user}
-          isDarkMode={currentTheme}
-          toggleTheme={toggleTheme}
-          onRefresh={handleRefresh}
-        />
+      {/* Main Content Area */}
+      <div className={`transition-all duration-300 ${mainContentMargin} pt-16`}>
+  <Header
+    user={user}
+    isDarkMode={isDarkMode}
+    toggleTheme={toggleTheme}
+    onRefresh={handleRefresh}
+    onLogout={handleLogout}
+  />
 
-        <main className="container mx-auto px-6 py-8 max-w-7xl">
-          <WelcomeSection userName={user.name} isDarkMode={currentTheme} />
+       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+          <WelcomeSection userName={user.name} isDarkMode={isDarkMode} />
 
           <StatsCards
             user={user}
             todayProgress={todayProgress}
-            isDarkMode={currentTheme}
+            isDarkMode={isDarkMode}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-8">
+            {/* Kolom Kiri */}
             <section className="lg:col-span-2 space-y-8">
               <DailyCheckIn
                 currentMood={currentMood}
                 setCurrentMood={handleMoodChange}
-                isDarkMode={currentTheme}
+                isDarkMode={isDarkMode}
               />
-
-              <AIInsights insights={insights} isDarkMode={currentTheme} />
+              <AIInsights insights={insights} isDarkMode={isDarkMode} />
             </section>
 
+            {/* Kolom Kanan */}
             <aside className="space-y-8">
-              <QuickActions
-                actions={quickActions}
-                isDarkMode={currentTheme}
-              />
-              <RecentMoods moods={recentMoods} isDarkMode={currentTheme} />
-              <HabitsProgress habits={habits} isDarkMode={currentTheme} />
+              <QuickActions actions={quickActions} isDarkMode={isDarkMode} />
+              <RecentMoods moods={recentMoods} isDarkMode={isDarkMode} />
+              <HabitsProgress habits={habits} isDarkMode={isDarkMode} />
             </aside>
           </div>
         </main>
@@ -127,6 +129,7 @@ const DashboardContent = () => {
   );
 };
 
+// Wrapper dengan DashboardProvider
 const MoodSyncDashboard = () => {
   return (
     <DashboardProvider>

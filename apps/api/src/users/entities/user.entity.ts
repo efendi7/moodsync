@@ -6,49 +6,48 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  OneToOne, // Tambahkan OneToOne untuk UserProfile
-  // Tambahkan JoinColumn untuk OneToOne
+  OneToOne,
 } from 'typeorm';
 
-// Impor semua entitas yang memiliki relasi dengan User
+// ✅ Import entitas yang SUDAH DIBUAT
 import { MoodEntry } from '../../mood-entry/entities/mood-entry.entity';
-import { UserProfile } from '../../user-profile/entities/user-profile.entity'; // Pastikan path benar
-import { Habit } from '../../habits/entities/habit.entity'; // Pastikan path benar
+import { UserProfile } from '../../user-profile/entities/user-profile.entity';
+import { Habit } from '../../habits/entities/habit.entity';
+import { JournalEntry } from '../../journal/entities/journal-entry.entity';
 import { HabitLog } from '../../habits/entities/habit-log.entity';
-import { DailyCheckin } from '../../daily-checkins/entities/daily-checkin.entity'; // Contoh
-import { WellnessScore } from '../../wellness-scores/entities/wellness-score.entity'; // Contoh
-import { Goal } from '../../goals/entities/goal.entity'; // Contoh
-import { AIInsight } from '../../ai-analytics/entities/ai-insight.entity'; // Contoh
-import { AIPrediction } from '../../ai-analytics/entities/ai-prediction.entity'; // Contoh
-import { PatternDetection } from '../../ai-analytics/entities/pattern-detection.entity'; // Contoh
-import { ContentLibrary } from '../../content-mindfulness/entities/content-library.entity'; 
-import { MeditationSession } from '../../content-mindfulness/entities/meditation-session.entity'; // Contoh
-import { JournalEntry } from '../../content-mindfulness/entities/journal-entry.entity'; // Contoh
-import { SupportCircle } from '../../social-community/entities/support-circle.entity'; // Contoh (jika User membuat circle)
-import { CircleMember } from '../../social-community/entities/circle-member.entity'; // Contoh (jika User adalah member circle)
-import { CommunityPost } from '../../social-community/entities/community-post.entity'; // Contoh
-import { PostInteraction } from '../../social-community/entities/post-interaction.entity'; // Contoh
-import { Assessment } from '../../professional/entities/assessment.entity';
-import { ClientAssessment } from '../../professional/entities/client-assessment.entity';
-import { CoachClient } from '../../professional/entities/coach-client.entity'; // Contoh
-import { TreatmentPlan } from '../../professional/entities/treatment-plan.entity'; // Contoh
-import { SessionNote } from '../../professional/entities/session-note.entity'; // Contoh
-import { Organization } from '../../organizations/entities/organization.entity'; // Make sure this is imported!
-import { OrganizationMember } from '../../organizations/entities/organization-member.entity'; // Contoh
-import { WellnessCampaign } from '../../organizations/entities/wellness-campaign.entity'; // Contoh
-import { UserAnalytics } from '../../system/entities/user-analytics.entity'; // Contoh
-import { Notification } from '../../system/entities/notification.entity'; // Contoh
+import { DailyCheckin } from '../../daily-checkins/entities/daily-checkins.entity';
+import { WellnessScore } from '../../wellness-scores/entities/wellness-score.entity';
+import { Goal } from '../../goals/entities/goal.entity';
+
+// ❌ COMMENT DULU - Belum dibuat entitynya
+// import { AIInsight } from '../../ai-analytics/entities/ai-insight.entity';
+// import { AIPrediction } from '../../ai-analytics/entities/ai-prediction.entity';
+// import { PatternDetection } from '../../ai-analytics/entities/pattern-detection.entity';
+// import { ContentLibrary } from '../../content-mindfulness/entities/content-library.entity';
+// import { MeditationSession } from '../../content-mindfulness/entities/meditation-session.entity';
+
+// import { SupportCircle } from '../../social-community/entities/support-circle.entity';
+// import { CircleMember } from '../../social-community/entities/circle-member.entity';
+// import { CommunityPost } from '../../social-community/entities/community-post.entity';
+// import { PostInteraction } from '../../social-community/entities/post-interaction.entity';
+// import { Assessment } from '../../professional/entities/assessment.entity';
+// import { ClientAssessment } from '../../professional/entities/client-assessment.entity';
+// import { CoachClient } from '../../professional/entities/coach-client.entity';
+// import { TreatmentPlan } from '../../professional/entities/treatment-plan.entity';
+// import { SessionNote } from '../../professional/entities/session-note.entity';
+// import { Organization } from '../../organizations/entities/organization.entity';
+// import { OrganizationMember } from '../../organizations/entities/organization-member.entity';
+// import { WellnessCampaign } from '../../organizations/entities/wellness-campaign.entity';
+// import { UserAnalytics } from '../../system/entities/user-analytics.entity';
+// import { Notification } from '../../system/entities/notification.entity';
 
 // --- Definisi Enum ---
-// Pastikan enum ini juga didefinisikan di file terpisah jika digunakan di banyak tempat.
-// Contoh: src/common/enums/user-role.enum.ts
 export enum UserRole {
   PERSONAL = 'personal',
   COACH = 'coach',
   ADMIN = 'admin',
 }
 
-// Contoh: src/common/enums/subscription-plan.enum.ts
 export enum SubscriptionPlan {
   FREE = 'free',
   PREMIUM = 'premium',
@@ -56,25 +55,25 @@ export enum SubscriptionPlan {
   ENTERPRISE = 'enterprise',
 }
 
-@Entity('users') // Nama tabel di database
+@Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid') // Menggunakan UUID sesuai skema awal Anda
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ unique: true })
   email: string;
 
   @Column({ unique: true })
-  username: string; // Kolom username dari skema awal Anda
+  username: string;
 
   @Column({ name: 'password_hash', nullable: true })
-  password_hash: string; // Menyimpan hash kata sandi
+  password_hash: string;
 
   @Column({ name: 'full_name', nullable: true })
-  full_name: string; // Kolom full_name dari skema awal Anda
+  full_name: string;
 
   @Column({ name: 'avatar_url', nullable: true })
-  avatar_url: string; // Kolom avatar_url dari skema awal Anda
+  avatar_url: string;
 
   @Column({ nullable: true })
   timezone: string;
@@ -85,10 +84,18 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.PERSONAL })
   role: UserRole;
 
-  @Column({ type: 'enum', enum: SubscriptionPlan, default: SubscriptionPlan.FREE })
+  @Column({
+    type: 'enum',
+    enum: SubscriptionPlan,
+    default: SubscriptionPlan.FREE,
+  })
   subscription_plan: SubscriptionPlan;
 
-  @Column({ type: 'timestamp', name: 'subscription_expires_at', nullable: true })
+  @Column({
+    type: 'timestamp',
+    name: 'subscription_expires_at',
+    nullable: true,
+  })
   subscription_expires_at: Date;
 
   @Column({ type: 'timestamp', name: 'email_verified_at', nullable: true })
@@ -98,26 +105,38 @@ export class User {
   onboarding_completed: boolean;
 
   @Column({ type: 'json', name: 'privacy_settings', nullable: true })
-  privacy_settings: Record<string, any>; // JSON untuk pengaturan privasi
+  privacy_settings: Record<string, any>;
 
   @CreateDateColumn({ name: 'created_at' })
-  created_at: Date; // Perhatikan nama kolom konsisten dengan skema Anda
+  created_at: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updated_at: Date; // Perhatikan nama kolom konsisten dengan skema Anda
+  updated_at: Date;
 
-  // --- Oauth (misalnya Google) ---
-  @Column({ type: 'varchar', length: 255, nullable: true, name: 'google_id', unique: true })
-  googleId?: string; // ID dari penyedia OAuth (misalnya Google)
+  // --- OAuth (Google) ---
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'google_id',
+    unique: true,
+  })
+  googleId?: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, name: 'profile_picture' })
-  profilePicture?: string; // URL gambar profil dari OAuth
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'profile_picture',
+  })
+  profilePicture?: string;
 
-  // --- Relasi ke Entitas Lain ---
+  // =========================================================================
+  // ✅ RELASI YANG SUDAH AKTIF (Entity sudah dibuat)
+  // =========================================================================
 
   // 1. UserProfile (OneToOne)
   @OneToOne(() => UserProfile, (userProfile) => userProfile.user)
- // JoinColumn di sisi pemilik relasi
   profile: UserProfile;
 
   // 2. Mood & Wellness Tracking
@@ -133,92 +152,92 @@ export class User {
   // 3. Habits & Goals Management
   @OneToMany(() => Habit, (habit) => habit.user)
   habits: Habit[];
-  // INI ADALAH BARIS YANG HILANG ATAU SALAH DI SISI USER
-  @OneToMany(() => HabitLog, habitLog => habitLog.user) // `habitLog.user` menunjuk balik ke properti `user` di HabitLog
-  habitLogs: HabitLog[]; // <-- Pastikan properti ini ada di User entity
 
-  // Anda juga perlu OneToMany ke HabitLog jika Anda ingin akses langsung dari User
-  // @OneToMany(() => HabitLog, (habitLog) => habitLog.user)
-  // habitLogs: HabitLog[];
+  @OneToMany(() => HabitLog, (habitLog) => habitLog.user)
+  habitLogs: HabitLog[];
 
   @OneToMany(() => Goal, (goal) => goal.user)
   goals: Goal[];
 
-  // 4. AI & Analytics
-  @OneToMany(() => AIInsight, (aiInsight) => aiInsight.user)
-  aiInsights: AIInsight[];
+  // =========================================================================
+  // ❌ RELASI YANG DI-COMMENT (Uncomment nanti setelah entity dibuat)
+  // =========================================================================
 
-  @OneToMany(() => AIPrediction, (aiPrediction) => aiPrediction.user)
-  aiPredictions: AIPrediction[];
+  // // 4. AI & Analytics
+  // @OneToMany(() => AIInsight, (aiInsight) => aiInsight.user)
+  // aiInsights: AIInsight[];
 
-  @OneToMany(() => PatternDetection, (patternDetection) => patternDetection.user)
-  patternDetections: PatternDetection[];
+  // @OneToMany(() => AIPrediction, (aiPrediction) => aiPrediction.user)
+  // aiPredictions: AIPrediction[];
 
-  // 5. Content & Mindfulness
-  @OneToMany(() => MeditationSession, (meditationSession) => meditationSession.user)
-  meditationSessions: MeditationSession[];
+  // @OneToMany(() => PatternDetection, (patternDetection) => patternDetection.user)
+  // patternDetections: PatternDetection[];
+
+  // // 5. Content & Mindfulness
+  // @OneToMany(() => MeditationSession, (meditationSession) => meditationSession.user)
+  // meditationSessions: MeditationSession[];
 
   @OneToMany(() => JournalEntry, (journalEntry) => journalEntry.user)
   journalEntries: JournalEntry[];
 
-   @OneToMany(() => ContentLibrary, content => content.author) // `content.author` points back to the `author` property in ContentLibrary
-  authoredContent: ContentLibrary[]; // <-- Ensure this property exists and is correctly typed
+  // @OneToMany(() => ContentLibrary, (content) => content.author)
+  // authoredContent: ContentLibrary[];
 
-  // 6. Social & Community
-  @OneToMany(() => SupportCircle, (circle) => circle.createdBy) // User bisa membuat SupportCircle
-  supportCirclesCreated: SupportCircle[];
+  // // 6. Social & Community
+  // @OneToMany(() => SupportCircle, (circle) => circle.createdBy)
+  // supportCirclesCreated: SupportCircle[];
 
-  @OneToMany(() => CircleMember, (member) => member.user) // User bisa menjadi member dari Circle
-  circleMemberships: CircleMember[];
+  // @OneToMany(() => CircleMember, (member) => member.user)
+  // circleMemberships: CircleMember[];
 
-  @OneToMany(() => CommunityPost, (post) => post.user)
-  communityPosts: CommunityPost[];
+  // @OneToMany(() => CommunityPost, (post) => post.user)
+  // communityPosts: CommunityPost[];
 
-  @OneToMany(() => PostInteraction, (interaction) => interaction.user)
-  postInteractions: PostInteraction[];
+  // @OneToMany(() => PostInteraction, (interaction) => interaction.user)
+  // postInteractions: PostInteraction[];
 
-  // 7. Professional Features (Coach/Client)
+  // // 7. Professional Features (Coach/Client)
+  // @OneToMany(() => Assessment, (assessment) => assessment.createdBy)
+  // createdAssessments: Assessment[];
 
-   @OneToMany(() => Assessment, assessment => assessment.createdBy)
-  createdAssessments: Assessment[]; // <-- Ensure this property exists and is correctly typed
+  // @OneToMany(() => ClientAssessment, (clientAssessment) => clientAssessment.client)
+  // clientAssessments: ClientAssessment[];
 
-  @OneToMany(() => ClientAssessment, clientAssessment => clientAssessment.client)
-  clientAssessments: ClientAssessment[]; // <-- Pastikan properti ini ada
+  // @OneToMany(() => ClientAssessment, (clientAssessment) => clientAssessment.coach)
+  // assignedClientAssessments: ClientAssessment[];
 
-  // Untuk coach yang menugaskan penilaian
-  @OneToMany(() => ClientAssessment, clientAssessment => clientAssessment.coach)
-  assignedClientAssessments: ClientAssessment[]; // <-- Pastikan properti ini ada
-  @OneToMany(() => CoachClient, (coachClient) => coachClient.coach) // Jika User adalah coach
-  coachingClients: CoachClient[];
+  // @OneToMany(() => CoachClient, (coachClient) => coachClient.coach)
+  // coachingClients: CoachClient[];
 
-  @OneToMany(() => CoachClient, (coachClient) => coachClient.client) // Jika User adalah client
-  clientOfCoaches: CoachClient[];
+  // @OneToMany(() => CoachClient, (coachClient) => coachClient.client)
+  // clientOfCoaches: CoachClient[];
 
-  @OneToMany(() => TreatmentPlan, (plan) => plan.coach)
-  treatmentPlansAsCoach: TreatmentPlan[];
+  // @OneToMany(() => TreatmentPlan, (plan) => plan.coach)
+  // treatmentPlansAsCoach: TreatmentPlan[];
 
-  @OneToMany(() => TreatmentPlan, (plan) => plan.client)
-  treatmentPlansAsClient: TreatmentPlan[];
+  // @OneToMany(() => TreatmentPlan, (plan) => plan.client)
+  // treatmentPlansAsClient: TreatmentPlan[];
 
-  @OneToMany(() => SessionNote, (note) => note.coach)
-  sessionNotesAsCoach: SessionNote[];
+  // @OneToMany(() => SessionNote, (note) => note.coach)
+  // sessionNotesAsCoach: SessionNote[];
 
-  @OneToMany(() => SessionNote, (note) => note.client)
-  sessionNotesAsClient: SessionNote[];
+  // @OneToMany(() => SessionNote, (note) => note.client)
+  // sessionNotesAsClient: SessionNote[];
 
-  // 8. Organization/Enterprise
-  @OneToMany(() => OrganizationMember, (orgMember) => orgMember.user)
-  organizationMemberships: OrganizationMember[];
+  // // 8. Organization/Enterprise
+  // @OneToMany(() => OrganizationMember, (orgMember) => orgMember.user)
+  // organizationMemberships: OrganizationMember[];
 
-   @OneToMany(() => Organization, org => org.adminUser) // `org.adminUser` points back to the `adminUser` property in Organization
-  administeredOrganizations: Organization[]; // <-- Ensure this property exists and is correctly typed
+  // @OneToMany(() => Organization, (org) => org.adminUser)
+  // administeredOrganizations: Organization[];
 
-    @OneToMany(() => WellnessCampaign, campaign => campaign.createdBy)
-  createdWellnessCampaigns: WellnessCampaign[];
-  // 9. System & Analytics
-  @OneToMany(() => UserAnalytics, (analytics) => analytics.user)
-  userAnalytics: UserAnalytics[];
+  // @OneToMany(() => WellnessCampaign, (campaign) => campaign.createdBy)
+  // createdWellnessCampaigns: WellnessCampaign[];
 
-  @OneToMany(() => Notification, (notification) => notification.user)
-  notifications: Notification[];
+  // // 9. System & Analytics
+  // @OneToMany(() => UserAnalytics, (analytics) => analytics.user)
+  // userAnalytics: UserAnalytics[];
+
+  // @OneToMany(() => Notification, (notification) => notification.user)
+  // notifications: Notification[];
 }

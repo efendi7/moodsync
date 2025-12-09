@@ -1,59 +1,79 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { GoalMilestone } from './goal-milestone.entity';
-
-export enum GoalStatus {
-  ACTIVE = 'active',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-}
+import { GoalStatus } from '../enums/goal-status.enum';
 
 @Entity('goals')
 export class Goal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  user_id: string;
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
+  userId: string;
 
-  @ManyToOne(() => User, user => user.goals)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @Column({ length: 255 })
+  @Column({ type: 'varchar', length: 255 })
   title: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   category: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, name: 'target_value' })
-  target_value: number;
+  @Column({
+    name: 'target_value',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  targetValue: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'current_value' })
-  current_value: number;
+  @Column({
+    name: 'current_value',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  currentValue: number;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   unit: string;
 
-  @Column({ type: 'date', name: 'target_date' })
-  target_date: Date;
+  @Column({ name: 'target_date', type: 'date' })
+  targetDate: Date;
 
   @Column({ type: 'tinyint', default: 3 })
-  priority: number; // 1-5
+  priority: number;
 
-  @Column({ type: 'enum', enum: GoalStatus, default: GoalStatus.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: GoalStatus,
+    default: GoalStatus.ACTIVE,
+  })
   status: GoalStatus;
 
   @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updated_at: Date;
+  updatedAt: Date;
 
-  @OneToMany(() => GoalMilestone, milestone => milestone.goal)
+  // Relationships
+  @ManyToOne(() => User, (user) => user.goals)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
+  @OneToMany(() => GoalMilestone, (milestone) => milestone.goal)
   milestones: GoalMilestone[];
 }

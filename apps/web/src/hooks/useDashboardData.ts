@@ -1,44 +1,7 @@
-// hooks/useDashboardData.ts
 import { useState, useEffect, useMemo } from 'react';
 import { Heart, Brain, Book, Mic, Award, LucideIcon } from 'lucide-react';
+import type { User, Insight, QuickAction, RecentMood, Habit } from '../types';
 
-// Types
-export interface User {
-  name: string;
-  avatar: string;
-  streak: number;
-  wellnessScore: number;
-}
-
-export interface Insight {
-  type: 'prediction' | 'recommendation' | 'achievement';
-  icon: string; // Changed from iconType to icon
-  title: string;
-  description: string;
-  action: string;
-}
-
-export interface QuickAction {
-  name: string;
-  icon: string; // Changed from iconType to icon
-  color: string;
-}
-
-export interface RecentMood {
-  date: string;
-  mood: string;
-  score: number;
-  time: string;
-}
-
-export interface Habit {
-  name: string;
-  completed: boolean;
-  streak: number;
-  target: string;
-}
-
-// Icon mapping - keep this for internal use
 export const iconMap: Record<string, LucideIcon> = {
   brain: Brain,
   heart: Heart,
@@ -50,10 +13,15 @@ export const iconMap: Record<string, LucideIcon> = {
 export const useDashboardData = () => {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data - in real app, this would come from API
   const user: User = useMemo(() => ({
+    id: '1',
     name: 'Fendi DiCaprio',
+    email: 'fendi@example.com',
     avatar: '👩‍💻',
+    joinDate: '2024-01-01',
+    streakDays: 12,
+    totalEntries: 120,
+    plan: 'premium',
     streak: 12,
     wellnessScore: 8.2,
   }), []);
@@ -62,92 +30,70 @@ export const useDashboardData = () => {
 
   const insights: Insight[] = useMemo(() => [
     {
+      id: '1',
       type: 'prediction',
-      icon: 'Brain', // Changed to match Lucide icon name
+      icon: 'brain',
       title: 'Energy Peak Predicted',
-      description: 'Based on your patterns, your energy will peak around 2 PM today',
-      action: 'Schedule important tasks',
+      description: 'Your energy will peak at 2PM today.',
+      action: 'Schedule tasks',
     },
     {
-      type: 'recommendation', 
-      icon: 'Heart', // Changed to match Lucide icon name
-      title: 'Mindfulness Recommended',
-      description: "You've been stressed lately. Try 10 minutes of meditation",
-      action: 'Start session',
+      id: '2',
+      type: 'recommendation',
+      icon: 'heart',
+      title: 'Mindfulness Reminder',
+      description: 'Try 10 minutes of meditation.',
+      action: 'Start now',
     },
     {
+      id: '3',
       type: 'achievement',
-      icon: 'Award', // Changed to match Lucide icon name
-      title: 'Habit Streak Achievement',
-      description: '12 days of consistent morning routine! Keep it up',
-      action: 'View habits',
+      icon: 'award',
+      title: 'Habit Streak!',
+      description: 'You’ve maintained a 12-day habit streak!',
+      action: 'See progress',
     },
   ], []);
 
   const quickActions: QuickAction[] = useMemo(() => [
     {
       name: 'Log Mood',
-      icon: 'Heart', // Changed to match Lucide icon name
+      icon: 'heart',
       color: 'from-pink-500 to-red-500',
     },
     {
       name: 'Meditation',
-      icon: 'Brain', // Changed to match Lucide icon name
+      icon: 'brain',
       color: 'from-purple-500 to-indigo-500',
-    },
-    {
-      name: 'Voice Note',
-      icon: 'Mic', // Changed to match Lucide icon name
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      name: 'Journal',
-      icon: 'Book', // Changed to match Lucide icon name
-      color: 'from-green-500 to-emerald-500',
     },
   ], []);
 
   const recentMoods: RecentMood[] = useMemo(() => [
-    { date: 'Today', mood: '😊', score: 8, time: '2 hours ago' },
-    { date: 'Yesterday', mood: '😌', score: 7, time: 'Yesterday' },
-    { date: 'Thu', mood: '😊', score: 9, time: '2 days ago' },
-    { date: 'Wed', mood: '😐', score: 6, time: '3 days ago' },
-    { date: 'Tue', mood: '😔', score: 4, time: '4 days ago' },
+    { date: 'Today', mood: '😊', score: 8, time: '2h ago' },
+    { date: 'Yesterday', mood: '😌', score: 7, time: '1d ago' },
   ], []);
 
   const habits: Habit[] = useMemo(() => [
     {
-      name: 'Morning Meditation',
-      completed: true,
-      streak: 12,
+      id: 'h1',
+      name: 'Meditate',
+      description: 'Morning meditation',
+      color: '#A78BFA',
+      icon: 'brain',
       target: '10 min',
-    },
-    {
-      name: 'Exercise',
+      frequency: 'daily',
+      streak: 12,
+      completedToday: true,
+      progress: 80,
+      category: 'wellness',
       completed: true,
-      streak: 8,
-      target: '30 min'
-    },
-    {
-      name: 'Gratitude Journal',
-      completed: false,
-      streak: 5,
-      target: '3 items',
-    },
-    {
-      name: 'Water Intake',
-      completed: true,
-      streak: 15,
-      target: '8 glasses'
     },
   ], []);
 
-  // Simulate loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 100);
-
     return () => clearTimeout(timer);
   }, []);
 
@@ -161,3 +107,4 @@ export const useDashboardData = () => {
     isLoading,
   };
 };
+export type { User, Insight, QuickAction, RecentMood, Habit };
